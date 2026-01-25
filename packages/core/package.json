@@ -1,0 +1,67 @@
+{
+  "name": "verifyfetch",
+  "version": "0.1.0",
+  "description": "Verify any file you fetch—before you trust it. Streaming integrity verification for WASM, AI models, and large files.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./auto": {
+      "import": "./dist/auto.js",
+      "types": "./dist/auto.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "wasm/pkg"
+  ],
+  "scripts": {
+    "build:wasm": "cd wasm && wasm-pack build --target web --out-dir pkg",
+    "build:ts": "tsup",
+    "build": "pnpm build:wasm && pnpm build:ts",
+    "dev": "tsup --watch",
+    "test": "vitest",
+    "clean": "rm -rf dist wasm/pkg wasm/target"
+  },
+  "keywords": [
+    "sri",
+    "subresource-integrity",
+    "fetch",
+    "verify",
+    "wasm",
+    "webassembly",
+    "ai",
+    "machine-learning",
+    "security",
+    "integrity",
+    "streaming",
+    "hash",
+    "sha256",
+    "supply-chain"
+  ],
+  "author": "",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hamzaydia/verifyfetch"
+  },
+  "homepage": "https://verifyfetch.com",
+  "bugs": {
+    "url": "https://github.com/hamzaydia/verifyfetch/issues"
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/hamzaydia"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0",
+    "vitest": "^2.0.0"
+  }
+}
