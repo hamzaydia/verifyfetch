@@ -20,7 +20,7 @@ import { verifyFetch } from './verify-fetch.js';
  * ```ts
  * import { createVerifyFetcher } from 'verifyfetch';
  *
- * const vf = createVerifyFetcher({
+ * const vf = await createVerifyFetcher({
  *   manifestUrl: '/vf.manifest.json'
  * });
  *
@@ -29,7 +29,7 @@ import { verifyFetch } from './verify-fetch.js';
  * const model = await vf.arrayBuffer('/models/phi-3.bin');
  * ```
  */
-export function createVerifyFetcher(options: VerifyFetcherOptions = {}): VerifiedFetcher {
+export async function createVerifyFetcher(options: VerifyFetcherOptions = {}): Promise<VerifiedFetcher> {
   const {
     manifestUrl,
     manifest: initialManifest,
@@ -152,7 +152,16 @@ export function createVerifyFetcher(options: VerifyFetcherOptions = {}): Verifie
     });
   }
 
+  // Auto-preload manifest if URL provided
+  if (manifestUrl) {
+    await ensureManifest();
+  }
+
   return {
+    async preload(): Promise<void> {
+      await ensureManifest();
+    },
+
     async fetch(url: string, init?: RequestInit): Promise<Response> {
       return verifiedFetch(url, init);
     },

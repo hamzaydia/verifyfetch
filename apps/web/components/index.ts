@@ -1,0 +1,9 @@
+export { Navbar } from './navbar';
+export { Hero } from './hero';
+export { Problem } from './problem';
+export { MemoryComparison } from './memory-comparison';
+export { Features } from './features';
+export { CodeExamples } from './code-examples';
+export { UseCases } from './use-cases';
+export { QuickStart } from './quick-start';
+export { Footer } from './footer';

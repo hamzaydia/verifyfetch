@@ -30,23 +30,25 @@ interface AutoConfig {
 // Global config storage
 let autoConfig: AutoConfig = {};
 let verifiedFetcher: VerifiedFetcher | null = null;
+let fetcherPromise: Promise<VerifiedFetcher> | null = null;
 let originalFetch: typeof fetch | null = null;
 let isWrapped = false;
 
 /**
  * Configure the auto wrapper
  */
-export function configureAuto(config: AutoConfig): void {
+export async function configureAuto(config: AutoConfig): Promise<void> {
   autoConfig = { ...autoConfig, ...config };
 
   // Reinitialize the fetcher if config changes
   if (autoConfig.manifestUrl || autoConfig.manifest) {
-    verifiedFetcher = createVerifyFetcher({
+    fetcherPromise = createVerifyFetcher({
       manifestUrl: autoConfig.manifestUrl,
       manifest: autoConfig.manifest,
       publicKeys: autoConfig.publicKeys,
       policyToken: autoConfig.policyToken,
     });
+    verifiedFetcher = await fetcherPromise;
   }
 }
 

@@ -135,7 +135,6 @@ If you discover a security vulnerability, please **do not** open a public issue.
 ## Questions?
 
 - Open a [Discussion](https://github.com/hamzaydia/verifyfetch/discussions)
-- Ask in our [Discord](https://discord.gg/verifyfetch)
 - Check existing [Issues](https://github.com/hamzaydia/verifyfetch/issues)
 
 ## License

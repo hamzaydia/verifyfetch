@@ -213,6 +213,13 @@ export interface StreamingHasher {
  */
 export interface VerifiedFetcher {
   /**
+   * Preload the manifest (recommended at app startup)
+   * This ensures the manifest is loaded before any fetches,
+   * providing fail-fast behavior and faster first fetch.
+   */
+  preload(): Promise<void>;
+
+  /**
    * Fetch and verify, returning the Response
    */
   fetch(url: string, init?: RequestInit): Promise<Response>;
