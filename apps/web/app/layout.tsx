@@ -13,24 +13,33 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'VerifyFetch - Verify any file you fetch',
+  metadataBase: new URL('https://verifyfetch.com'),
+  title: {
+    default: 'VerifyFetch - Streaming Integrity Verification',
+    template: '%s | VerifyFetch',
+  },
   description:
     'Streaming integrity verification for WASM, AI models, and large files. SRI for fetch() with constant 2MB memory usage.',
   keywords: [
     'SRI',
-    'integrity',
-    'fetch',
-    'verification',
+    'subresource integrity',
+    'integrity verification',
+    'fetch API',
     'security',
     'WASM',
+    'WebAssembly',
     'AI models',
-    'supply chain',
+    'supply chain security',
+    'streaming hash',
+    'SHA-256',
+    'CDN security',
   ],
   authors: [{ name: 'Hamza Ezzaydia' }],
+  creator: 'Hamza Ezzaydia',
   openGraph: {
-    title: 'VerifyFetch - Verify any file you fetch',
+    title: 'VerifyFetch - Streaming Integrity Verification',
     description:
-      'Streaming integrity verification for WASM, AI models, and large files.',
+      'Verify any file you fetch. Streaming integrity verification for WASM, AI models, and large files with constant 2MB memory.',
     url: 'https://verifyfetch.com',
     siteName: 'VerifyFetch',
     locale: 'en_US',
@@ -44,7 +53,39 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
+  alternates: {
+    canonical: 'https://verifyfetch.com',
+  },
+};
+
+// JSON-LD structured data
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'VerifyFetch',
+  applicationCategory: 'DeveloperApplication',
+  operatingSystem: 'Web Browser, Node.js',
+  description:
+    'Streaming integrity verification library for WASM, AI models, and large files. SRI for fetch() with constant 2MB memory usage.',
+  url: 'https://verifyfetch.com',
+  author: {
+    '@type': 'Person',
+    name: 'Hamza Ezzaydia',
+  },
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'USD',
+  },
+  keywords: 'SRI, integrity, fetch, verification, security, WASM, AI models',
 };
 
 export default function RootLayout({
@@ -54,6 +95,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >

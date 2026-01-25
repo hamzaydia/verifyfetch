@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" fill="none">
+  <!-- Apple Touch Icon: code brackets + checkmark -->
+  <rect width="180" height="180" rx="40" fill="#0a0a0a"/>
+  <path d="M50 40L20 90L50 140" stroke="#10b981" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M130 40L160 90L130 140" stroke="#10b981" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M65 90L80 108L115 70" stroke="#10b981" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

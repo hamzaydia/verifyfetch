@@ -1,0 +1,8 @@
+# VerifyFetch - Streaming Integrity Verification
+# https://verifyfetch.com
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://verifyfetch.com/sitemap.xml

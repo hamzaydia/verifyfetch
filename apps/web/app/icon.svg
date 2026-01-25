@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Optimized for favicon: code brackets + checkmark -->
+  <rect width="32" height="32" rx="6" fill="#0a0a0a"/>
+  <path d="M9 7L3 16L9 25" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M23 7L29 16L23 25" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M12 16L14.5 19L20 13" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
