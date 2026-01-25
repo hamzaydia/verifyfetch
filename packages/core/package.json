@@ -17,8 +17,7 @@
     }
   },
   "files": [
-    "dist",
-    "wasm/pkg"
+    "dist"
   ],
   "scripts": {
     "build:wasm": "cd wasm && wasm-pack build --target web --out-dir pkg",
@@ -44,7 +43,10 @@
     "sha256",
     "supply-chain"
   ],
-  "author": "",
+  "author": "Hamza Ezzaydia",
+  "publishConfig": {
+    "access": "public"
+  },
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

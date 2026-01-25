@@ -129,31 +129,6 @@ await verifyFetch(url, { sri });
 
 ---
 
-## Sponsors
-
-VerifyFetch is free, open-source, and maintained by volunteers.
-
-**If it protects your users, please consider sponsoring:**
-
-<p align="center">
-  <a href="https://github.com/sponsors/hamzaydia">
-    <img src="https://img.shields.io/badge/Sponsor_on_GitHub-ea4aaa?style=for-the-badge&logo=github-sponsors&logoColor=white" alt="Sponsor" />
-  </a>
-</p>
-
-<table>
-<tr>
-<th>🥇 Gold Sponsors</th>
-<th>🥈 Silver Sponsors</th>
-</tr>
-<tr>
-<td align="center"><em><a href="https://github.com/sponsors/hamzaydia">Your company here</a></em></td>
-<td align="center"><em><a href="https://github.com/sponsors/hamzaydia">Your logo here</a></em></td>
-</tr>
-</table>
-
----
-
 <details>
 <summary><strong>Full API Reference</strong></summary>
 
@@ -238,8 +213,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 <p align="center">
   <a href="https://verifyfetch.com">Docs</a> •
-  <a href="https://github.com/hamzaydia/verifyfetch">GitHub</a> •
-  <a href="https://github.com/sponsors/hamzaydia">Sponsor</a>
+  <a href="https://github.com/hamzaydia/verifyfetch">GitHub</a>
 </p>
 
 <p align="center">
