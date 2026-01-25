@@ -30,8 +30,8 @@ importers:
         specifier: ^8.0.0
         version: 8.2.0
       verifyfetch:
-        specifier: workspace:*
-        version: link:../core
+        specifier: ^0.1.0
+        version: 0.1.0
     devDependencies:
       '@types/node':
         specifier: ^20.0.0
@@ -1324,6 +1324,9 @@ packages:
     resolution: {integrity: sha512-rBJeI5CXAlmy1pV+617WB9J63U6XcazHHF2f2dbJix4XzpUF0RS3Zbj0FGIOCAva5P/d/GBOYaACQ1w+0azUkg==}
     engines: {node: '>= 4.0.0'}
 
+  verifyfetch@0.1.0:
+    resolution: {integrity: sha512-7+Sg33mmSMrFuLzYBXsSd+btOfwB4xeOByEExxZSwM1mFPoi5bEjRtj/RXW7fHDKmPjxtWwJB4xHERq0mWV8YQ==}
+
   vite-node@2.1.9:
     resolution: {integrity: sha512-AM9aQ/IPrW/6ENLQg3AGY4K1N2TGZdR5e4gu/MmmR2xR3Ll1+dib+nook92g4TV3PXVyeyxdWwtaCAiUL0hMxA==}
     engines: {node: ^18.0.0 || >=20.0.0}
@@ -2541,6 +2544,8 @@ snapshots:
   undici-types@6.21.0: {}
 
   universalify@0.1.2: {}
+
+  verifyfetch@0.1.0: {}
 
   vite-node@2.1.9(@types/node@20.19.30):
     dependencies:

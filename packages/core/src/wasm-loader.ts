@@ -1,8 +1,9 @@
 /**
- * WASM Hasher Loader
+ * WASM Hasher Loader with SubtleCrypto Fallback
  *
- * Handles loading and initialization of the WASM streaming hasher module.
- * Provides a unified interface for creating hashers regardless of algorithm.
+ * Provides streaming hash computation with automatic fallback:
+ * - WASM: Best for large files (streaming, constant 2MB memory)
+ * - SubtleCrypto: Universal fallback (buffers data, works everywhere)
  */
 
 import type { HashAlgorithm, StreamingHasher, SRIString } from './types.js';
@@ -25,14 +26,18 @@ interface WasmHasher {
 
 // Cached WASM module instance
 let wasmModule: WasmExports | null = null;
-let wasmInitPromise: Promise<WasmExports> | null = null;
+let wasmInitPromise: Promise<WasmExports | null> | null = null;
+let wasmAvailable: boolean | null = null;
 
 /**
- * Initialize the WASM module
- * This is called automatically on first use, but can be called explicitly
- * to preload the module for faster first-use latency.
+ * Initialize the WASM module (with fallback to SubtleCrypto)
+ * Returns null if WASM is not available, triggering SubtleCrypto fallback
  */
-export async function initWasm(): Promise<WasmExports> {
+export async function initWasm(): Promise<WasmExports | null> {
+  if (wasmAvailable === false) {
+    return null;
+  }
+
   if (wasmModule) {
     return wasmModule;
   }
@@ -46,47 +51,89 @@ export async function initWasm(): Promise<WasmExports> {
   return wasmModule;
 }
 
-async function loadWasm(): Promise<WasmExports> {
+async function loadWasm(): Promise<WasmExports | null> {
   // Try multiple paths for the WASM module
   const possiblePaths = [
     // npm package structure
-    new URL('../wasm/pkg/verifyfetch_hasher.js', import.meta.url),
+    '../wasm/pkg/verifyfetch_hasher.js',
     // Development structure
-    new URL('./wasm/pkg/verifyfetch_hasher.js', import.meta.url),
+    './wasm/pkg/verifyfetch_hasher.js',
   ];
-
-  let lastError: Error | null = null;
 
   for (const modulePath of possiblePaths) {
     try {
+      const fullPath = new URL(modulePath, import.meta.url);
       // Dynamic import of the wasm-bindgen generated module
-      const wasm = await import(/* @vite-ignore */ modulePath.href);
+      const wasm = await import(/* @vite-ignore */ fullPath.href);
 
       // Initialize the WASM module if it has an init function
       if (typeof wasm.default === 'function') {
         await wasm.default();
       }
 
+      wasmAvailable = true;
       return wasm as WasmExports;
-    } catch (err) {
-      lastError = err as Error;
+    } catch {
       continue;
     }
   }
 
-  throw new Error(
-    `Failed to load VerifyFetch WASM module. ` +
-    `Last error: ${lastError?.message}\n\n` +
-    `Make sure the WASM module is built: pnpm build:wasm\n` +
-    `Learn more: https://verifyfetch.com/docs/wasm-setup`
-  );
+  // WASM not available, will use SubtleCrypto fallback
+  wasmAvailable = false;
+  return null;
+}
+
+/**
+ * SubtleCrypto fallback hasher
+ * Buffers all data and hashes at finalize() - works everywhere
+ */
+function createSubtleCryptoHasher(algorithm: HashAlgorithm): StreamingHasher {
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+
+  const algorithmMap: Record<HashAlgorithm, string> = {
+    sha256: 'SHA-256',
+    sha384: 'SHA-384',
+    sha512: 'SHA-512',
+  };
+
+  return {
+    update(data: Uint8Array): void {
+      chunks.push(new Uint8Array(data));
+      totalBytes += data.length;
+    },
+    async finalize(): Promise<SRIString> {
+      // Combine all chunks
+      const combined = new Uint8Array(totalBytes);
+      let offset = 0;
+      for (const chunk of chunks) {
+        combined.set(chunk, offset);
+        offset += chunk.length;
+      }
+
+      // Hash with SubtleCrypto
+      const hashBuffer = await crypto.subtle.digest(algorithmMap[algorithm], combined);
+      const hashBase64 = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
+
+      return `${algorithm}-${hashBase64}` as SRIString;
+    },
+    get bytes_processed(): number {
+      return totalBytes;
+    },
+  };
 }
 
 /**
  * Create a streaming hasher for the specified algorithm
+ * Uses WASM when available, falls back to SubtleCrypto
  */
 export async function createHasher(algorithm: HashAlgorithm): Promise<StreamingHasher> {
   const wasm = await initWasm();
+
+  // Fallback to SubtleCrypto if WASM not available
+  if (!wasm) {
+    return createSubtleCryptoHasher(algorithm);
+  }
 
   let hasher: WasmHasher;
 
@@ -123,6 +170,13 @@ export async function createHasher(algorithm: HashAlgorithm): Promise<StreamingH
  */
 export async function hash(data: Uint8Array, algorithm: HashAlgorithm = 'sha256'): Promise<SRIString> {
   const wasm = await initWasm();
+
+  // Fallback to SubtleCrypto if WASM not available
+  if (!wasm) {
+    const hasher = createSubtleCryptoHasher(algorithm);
+    hasher.update(data);
+    return hasher.finalize();
+  }
 
   switch (algorithm) {
     case 'sha256':

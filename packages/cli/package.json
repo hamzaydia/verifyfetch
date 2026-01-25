@@ -1,7 +1,7 @@
 {
   "name": "@verifyfetch/cli",
-  "version": "0.1.0",
-  "description": "CLI for VerifyFetch - sign manifests and enforce integrity in CI",
+  "version": "0.1.1",
+  "description": "Generate SRI hashes and enforce file integrity in CI/CD. Works with WASM, AI models, and any binary files.",
   "type": "module",
   "bin": {
     "verifyfetch": "./dist/cli.js"
@@ -31,8 +31,17 @@
     "verifyfetch",
     "cli",
     "sri",
+    "subresource-integrity",
+    "hash",
+    "sha256",
     "integrity",
-    "security"
+    "security",
+    "ci",
+    "cd",
+    "verify",
+    "manifest",
+    "wasm",
+    "ai-models"
   ],
   "license": "Apache-2.0",
   "author": "Hamza Ezzaydia",

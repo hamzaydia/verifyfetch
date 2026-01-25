@@ -138,7 +138,7 @@ export async function verifyFetch(
   await streamPromise;
 
   // Verify the hash
-  const actualSri = hasher.finalize();
+  const actualSri = await hasher.finalize();
 
   if (actualSri !== sri) {
     return handleVerificationFailure(
@@ -215,7 +215,7 @@ export async function verifyStream(
     }
   }
 
-  const actualSri = hasher.finalize();
+  const actualSri = await hasher.finalize();
 
   if (actualSri !== sri) {
     throw new IntegrityError('stream', sri, actualSri);
@@ -301,5 +301,5 @@ export async function computeSri(
   const input = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
   const hasher = await createHasher(algorithm);
   hasher.update(input);
-  return hasher.finalize();
+  return await hasher.finalize();
 }

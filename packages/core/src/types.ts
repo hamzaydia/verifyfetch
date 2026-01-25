@@ -200,11 +200,11 @@ export class SignatureError extends Error {
 }
 
 /**
- * Streaming hasher interface (implemented by WASM)
+ * Streaming hasher interface (implemented by WASM or SubtleCrypto fallback)
  */
 export interface StreamingHasher {
   update(data: Uint8Array): void;
-  finalize(): SRIString;
+  finalize(): SRIString | Promise<SRIString>;
   readonly bytes_processed: number;
 }
 
