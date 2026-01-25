@@ -348,30 +348,32 @@ const response = await verifyFetch('${inputMode === 'url' ? url : '/' + resource
             )}
 
             {/* Algorithm Selection */}
-            <div className="flex items-center gap-4 mt-6">
-              <span className="text-sm text-zinc-400">Algorithm:</span>
-              <div className="flex gap-2">
-                {(['sha256', 'sha384', 'sha512'] as Algorithm[]).map((algo) => (
-                  <button
-                    key={algo}
-                    onClick={() => {
-                      setAlgorithm(algo);
-                      setHash(null);
-                    }}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      algorithm === algo
-                        ? 'bg-primary text-white'
-                        : 'bg-zinc-800 text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    {algo.toUpperCase()}
-                  </button>
-                ))}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 mt-6">
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-zinc-400">Algorithm:</span>
+                <div className="flex gap-2">
+                  {(['sha256', 'sha384', 'sha512'] as Algorithm[]).map((algo) => (
+                    <button
+                      key={algo}
+                      onClick={() => {
+                        setAlgorithm(algo);
+                        setHash(null);
+                      }}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        algorithm === algo
+                          ? 'bg-primary text-white'
+                          : 'bg-zinc-800 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      {algo.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
               </div>
               <button
                 onClick={handleHash}
                 disabled={(inputMode === 'file' && !file) || (inputMode === 'url' && !url.trim()) || hashing}
-                className="btn-primary ml-auto disabled:opacity-50"
+                className="btn-primary w-full sm:w-auto sm:ml-auto disabled:opacity-50"
               >
                 {hashing ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -565,14 +567,14 @@ const response = await verifyFetch('${inputMode === 'url' ? url : '/' + resource
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-3">
-                  <button onClick={downloadManifest} className="btn-primary">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button onClick={downloadManifest} className="btn-primary w-full sm:w-auto">
                     <Download className="w-4 h-4" />
                     Download vf.manifest.json
                   </button>
                   <button
                     onClick={() => setManifestEntries([])}
-                    className="btn-secondary"
+                    className="btn-secondary w-full sm:w-auto"
                   >
                     <Trash2 className="w-4 h-4" />
                     Clear All

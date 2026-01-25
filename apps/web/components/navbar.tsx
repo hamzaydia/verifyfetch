@@ -31,10 +31,10 @@ export function Navbar() {
         scrolled ? 'glass py-3' : 'py-5'
       }`}
     >
-      <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
-        <a href="/" className="flex items-center gap-3">
-          <Image src="/logo.svg" alt="VerifyFetch" width={32} height={32} />
-          <span className="font-semibold text-lg">VerifyFetch</span>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between">
+        <a href="/" className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <Image src="/logo.svg" alt="VerifyFetch" width={32} height={32} className="flex-shrink-0" />
+          <span className="font-semibold text-lg truncate">VerifyFetch</span>
         </a>
 
         {/* Desktop Navigation */}
@@ -83,7 +83,7 @@ export function Navbar() {
 
         {/* Mobile Menu Button */}
         <button
-          className="md:hidden text-zinc-400 hover:text-white"
+          className="md:hidden text-zinc-400 hover:text-white p-2 -mr-2 flex-shrink-0"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
           {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}

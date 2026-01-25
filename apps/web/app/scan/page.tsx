@@ -130,8 +130,8 @@ function ScriptCard({ script }: { script: ScriptInfo }) {
               <ExternalLink className="w-3 h-3" />
             </a>
           </div>
-          <div className="flex items-center gap-2">
-            <code className="text-xs text-zinc-500 truncate block max-w-md">
+          <div className="flex items-center gap-2 min-w-0">
+            <code className="text-xs text-zinc-500 truncate block max-w-[200px] sm:max-w-md">
               {script.src}
             </code>
             <button
@@ -242,7 +242,7 @@ export default function ScanPage() {
             onSubmit={handleScan}
             className="mb-12"
           >
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <input
                 type="text"
                 value={url}
@@ -253,7 +253,7 @@ export default function ScanPage() {
               <button
                 type="submit"
                 disabled={loading || !url.trim()}
-                className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-primary w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />

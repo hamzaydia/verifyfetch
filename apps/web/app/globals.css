@@ -44,12 +44,14 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
   background-color: rgb(var(--background));
   color: rgb(var(--foreground));
   font-feature-settings: "rlig" 1, "calt" 1;
+  overflow-x: hidden;
 }
 
 ::selection {
@@ -114,6 +116,20 @@ body {
   padding: 1rem;
   overflow-x: auto;
   border: 1px solid rgb(255 255 255 / 0.1);
+  max-width: 100%;
+}
+
+/* Ensure code doesn't overflow on mobile */
+code {
+  word-break: break-word;
+}
+
+/* Better mobile tap targets */
+@media (max-width: 640px) {
+  .btn-primary,
+  .btn-secondary {
+    min-height: 48px;
+  }
 }
 
 .feature-card {
