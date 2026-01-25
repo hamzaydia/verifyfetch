@@ -19,7 +19,6 @@ interface SignOptions {
   out: string;
   base: string;
   algorithm: 'sha256' | 'sha384' | 'sha512';
-  key?: string;
   update: boolean;
 }
 
@@ -29,12 +28,18 @@ export const signCommand = new Command('sign')
   .option('-o, --out <file>', 'Output manifest file', './vf.manifest.json')
   .option('-b, --base <path>', 'Base path for URLs in manifest', '/')
   .option('-a, --algorithm <alg>', 'Hash algorithm (sha256, sha384, sha512)', 'sha256')
-  .option('-k, --key <file>', 'Private key file for signing (optional)')
   .option('-u, --update', 'Update existing manifest instead of replacing', false)
   .action(async (patterns: string[], options: SignOptions) => {
     const spinner = ora('Finding files...').start();
 
     try {
+      // Validate algorithm
+      const validAlgorithms = ['sha256', 'sha384', 'sha512'];
+      if (!validAlgorithms.includes(options.algorithm)) {
+        spinner.fail(chalk.red(`Invalid algorithm: ${options.algorithm}`));
+        console.log(chalk.dim(`Valid algorithms: ${validAlgorithms.join(', ')}`));
+        process.exit(1);
+      }
       // Expand glob patterns
       const files: string[] = [];
       for (const pattern of patterns) {

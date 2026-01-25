@@ -51,7 +51,14 @@ export const enforceCommand = new Command('enforce')
         process.exit(1);
       }
 
-      const manifest: VFManifest = JSON.parse(manifestContent);
+      let manifest: VFManifest;
+      try {
+        manifest = JSON.parse(manifestContent) as VFManifest;
+      } catch {
+        spinner.fail(chalk.red('Invalid manifest file: not valid JSON'));
+        console.log(chalk.dim('Make sure the manifest file is valid JSON.'));
+        process.exit(1);
+      }
 
       if (manifest.version !== 1) {
         spinner.fail(chalk.red(`Unsupported manifest version: ${manifest.version}`));

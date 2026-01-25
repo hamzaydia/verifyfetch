@@ -114,12 +114,7 @@ export const initCommand = new Command('init')
        sri: 'sha256-...'
      });
 `)}
-  3. Or use the Next.js config wrapper for auto-verification:
-     ${chalk.dim(`
-     // next.config.js
-     const { withVerifyFetch } = require('${options.output}/verify-fetch');
-     module.exports = withVerifyFetch({});
-`)}
+  3. (Coming in v0.2) Auto-manifest generation with Next.js config wrapper
 `);
       } else {
         console.log(`
@@ -356,7 +351,11 @@ export function useVerifiedFetch<T = ArrayBuffer>(
 }
 
 /**
- * Next.js config wrapper (use in next.config.js)
+ * Next.js config wrapper placeholder
+ *
+ * NOTE: Auto-manifest generation coming in v0.2!
+ * For now, use the CLI to generate manifests:
+ *   npx verifyfetch sign ./public/**/*.wasm --out ./public/vf.manifest.json
  *
  * @example
  * const { withVerifyFetch } = require('./lib/verify-fetch');
@@ -365,22 +364,9 @@ export function useVerifiedFetch<T = ArrayBuffer>(
  * });
  */
 export function withVerifyFetch(nextConfig: any = {}) {
-  return {
-    ...nextConfig,
-    webpack: (config: any, options: any) => {
-      // Add manifest generation plugin in production
-      if (!options.dev && !options.isServer) {
-        console.log('[VerifyFetch] Production build detected');
-        // Future: Auto-generate manifest from public assets
-      }
-
-      // Call existing webpack config if present
-      if (typeof nextConfig.webpack === 'function') {
-        return nextConfig.webpack(config, options);
-      }
-      return config;
-    },
-  };
+  // v0.1: Pass-through wrapper. Auto-manifest generation coming in v0.2.
+  // For now, generate manifests manually with: npx verifyfetch sign
+  return nextConfig;
 }
 `;
   } else if (framework === 'vite') {
@@ -392,7 +378,11 @@ export function withVerifyFetch(nextConfig: any = {}) {
 // ============================================
 
 /**
- * Vite plugin for auto-generating manifests
+ * Vite plugin placeholder
+ *
+ * NOTE: Full Vite integration coming in v0.2!
+ * For now, use the CLI to generate manifests after building:
+ *   npx verifyfetch sign ./dist/**/*.wasm --out ./dist/vf.manifest.json
  *
  * @example
  * // vite.config.ts
@@ -403,10 +393,12 @@ export function withVerifyFetch(nextConfig: any = {}) {
  * });
  */
 export function verifyFetchPlugin() {
+  // v0.1: Reminder plugin only. Full integration coming in v0.2.
   return {
     name: 'verifyfetch',
     buildEnd() {
-      console.log('[VerifyFetch] Build complete. Run "npx verifyfetch sign dist/**/*" to generate manifest.');
+      console.log('\\n[VerifyFetch] Build complete!');
+      console.log('[VerifyFetch] Generate manifest: npx verifyfetch sign ./dist/**/* --out ./dist/vf.manifest.json\\n');
     },
   };
 }
