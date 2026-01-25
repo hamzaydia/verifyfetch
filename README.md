@@ -106,7 +106,7 @@ await verifyFetch('/large-model.bin', {
 
 **Manifest Mode**
 ```typescript
-const vf = createVerifyFetcher({
+const vf = await createVerifyFetcher({
   manifestUrl: '/vf.manifest.json'
 });
 
@@ -130,8 +130,7 @@ await verifyFetch(url, { sri });
 
 ---
 
-<details>
-<summary><strong>Full API Reference</strong></summary>
+## Full API Reference
 
 ### `verifyFetch(url, options)`
 
@@ -146,7 +145,7 @@ const response = await verifyFetch('/file.bin', {
 ### `createVerifyFetcher(options)`
 
 ```typescript
-const vf = createVerifyFetcher({
+const vf = await createVerifyFetcher({
   manifestUrl: '/vf.manifest.json',
   publicKeys: [PEM_KEY]           // Optional, for signatures
 });
@@ -176,7 +175,7 @@ verifyfetch init --next         # Add to Next.js project
 }
 ```
 
-</details>
+---
 
 <details>
 <summary><strong>Security Model</strong></summary>
