@@ -1,7 +1,21 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "outputDirectory": "out",
+  "outputDirectory": ".next",
   "buildCommand": "pnpm build",
-  "installCommand": "pnpm install"
+  "installCommand": "pnpm install",
+  "redirects": [
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "www.verifyfetch.com" }],
+      "destination": "https://verifyfetch.com/",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.verifyfetch.com" }],
+      "destination": "https://verifyfetch.com/:path*",
+      "permanent": true
+    }
+  ]
 }
