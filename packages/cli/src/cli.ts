@@ -11,11 +11,18 @@
 
 import { Command } from 'commander';
 import chalk from 'chalk';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import { signCommand } from './commands/sign.js';
 import { enforceCommand } from './commands/enforce.js';
 import { initCommand } from './commands/init.js';
 
-const VERSION = '0.1.0';
+// Read version from package.json dynamically
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const pkgPath = join(__dirname, '..', 'package.json');
+const VERSION = JSON.parse(readFileSync(pkgPath, 'utf-8')).version;
 
 // ASCII Art Banner
 const BANNER = `

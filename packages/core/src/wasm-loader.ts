@@ -8,6 +8,21 @@
 
 import type { HashAlgorithm, StreamingHasher, SRIString } from './types.js';
 
+// Get crypto API (works in browsers, Node 20+, and Node 18 with polyfill)
+async function getCrypto(): Promise<Crypto> {
+  // Try globalThis first (browsers, Node 20+)
+  if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.subtle) {
+    return globalThis.crypto;
+  }
+  // Node.js fallback - import from node:crypto
+  try {
+    const nodeCrypto = await import('node:crypto');
+    return nodeCrypto.webcrypto as Crypto;
+  } catch {
+    throw new Error('No crypto API available. Ensure you are running in a supported environment.');
+  }
+}
+
 // Type definitions for the WASM module exports
 interface WasmExports {
   Sha256Hasher: new () => WasmHasher;
@@ -28,6 +43,12 @@ interface WasmHasher {
 let wasmModule: WasmExports | null = null;
 let wasmInitPromise: Promise<WasmExports | null> | null = null;
 let wasmAvailable: boolean | null = null;
+
+// Track if we've shown the SubtleCrypto warning
+let hasShownSubtleCryptoWarning = false;
+
+// Threshold for warning about SubtleCrypto memory usage (50MB)
+const SUBTLE_CRYPTO_WARNING_THRESHOLD = 50 * 1024 * 1024;
 
 /**
  * Initialize the WASM module (with fallback to SubtleCrypto)
@@ -86,6 +107,10 @@ async function loadWasm(): Promise<WasmExports | null> {
 /**
  * SubtleCrypto fallback hasher
  * Buffers all data and hashes at finalize() - works everywhere
+ *
+ * @remarks This fallback buffers the entire file in memory, unlike the WASM
+ * streaming hasher which uses constant ~2MB. For files >50MB, consider
+ * ensuring WASM is available for better memory efficiency.
  */
 function createSubtleCryptoHasher(algorithm: HashAlgorithm): StreamingHasher {
   const chunks: Uint8Array[] = [];
@@ -101,6 +126,19 @@ function createSubtleCryptoHasher(algorithm: HashAlgorithm): StreamingHasher {
     update(data: Uint8Array): void {
       chunks.push(new Uint8Array(data));
       totalBytes += data.length;
+
+      // Warn once when file size exceeds threshold
+      if (!hasShownSubtleCryptoWarning && totalBytes > SUBTLE_CRYPTO_WARNING_THRESHOLD) {
+        hasShownSubtleCryptoWarning = true;
+        console.warn(
+          '[VerifyFetch] Large file detected (>' +
+            Math.round(SUBTLE_CRYPTO_WARNING_THRESHOLD / 1024 / 1024) +
+            'MB) with SubtleCrypto fallback.\n' +
+            'SubtleCrypto buffers the entire file in memory, which may cause issues.\n' +
+            'For better performance with large files, ensure WASM is available.\n' +
+            'Learn more: https://verifyfetch.com/docs/wasm-setup'
+        );
+      }
     },
     async finalize(): Promise<SRIString> {
       // Combine all chunks
@@ -112,8 +150,18 @@ function createSubtleCryptoHasher(algorithm: HashAlgorithm): StreamingHasher {
       }
 
       // Hash with SubtleCrypto
-      const hashBuffer = await crypto.subtle.digest(algorithmMap[algorithm], combined);
-      const hashBase64 = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
+      const cryptoApi = await getCrypto();
+      const hashBuffer = await cryptoApi.subtle.digest(algorithmMap[algorithm], combined);
+      const hashArray = new Uint8Array(hashBuffer);
+
+      // Convert to base64 (works in both browser and Node.js)
+      let hashBase64: string;
+      if (typeof btoa === 'function') {
+        hashBase64 = btoa(String.fromCharCode(...hashArray));
+      } else {
+        // Node.js fallback
+        hashBase64 = Buffer.from(hashArray).toString('base64');
+      }
 
       return `${algorithm}-${hashBase64}` as SRIString;
     },
@@ -211,4 +259,23 @@ export function parseAlgorithm(sri: SRIString): HashAlgorithm {
 export function validateSri(sri: string): sri is SRIString {
   const sriPattern = /^sha(256|384|512)-[A-Za-z0-9+/]+=*$/;
   return sriPattern.test(sri);
+}
+
+/**
+ * Check if WASM hasher is available and being used
+ *
+ * @returns true if WASM is available, false if using SubtleCrypto fallback
+ *
+ * @example
+ * ```ts
+ * import { isUsingWasm } from 'verifyfetch';
+ *
+ * if (!await isUsingWasm()) {
+ *   console.warn('WASM not available, using SubtleCrypto fallback');
+ * }
+ * ```
+ */
+export async function isUsingWasm(): Promise<boolean> {
+  const wasm = await initWasm();
+  return wasm !== null;
 }

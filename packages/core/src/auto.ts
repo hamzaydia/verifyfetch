@@ -22,8 +22,6 @@ import type { VFManifest, VerifiedFetcher } from './types.js';
 interface AutoConfig {
   manifestUrl?: string;
   manifest?: VFManifest;
-  publicKeys?: string[];
-  policyToken?: string;
   patterns?: RegExp[];
 }
 
@@ -45,8 +43,6 @@ export async function configureAuto(config: AutoConfig): Promise<void> {
     fetcherPromise = createVerifyFetcher({
       manifestUrl: autoConfig.manifestUrl,
       manifest: autoConfig.manifest,
-      publicKeys: autoConfig.publicKeys,
-      policyToken: autoConfig.policyToken,
     });
     verifiedFetcher = await fetcherPromise;
   }

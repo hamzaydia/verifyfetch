@@ -15,9 +15,9 @@
     "clsx": "^2.1.1",
     "framer-motion": "^11.15.0",
     "lucide-react": "^0.468.0",
-    "next": "^16.1.2",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "next": "^16.1.4",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "recharts": "^2.15.0",
     "tailwind-merge": "^2.6.0"
   },

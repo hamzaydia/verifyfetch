@@ -33,8 +33,6 @@ export async function createVerifyFetcher(options: VerifyFetcherOptions = {}): P
   const {
     manifestUrl,
     manifest: initialManifest,
-    publicKeys = [],
-    policyToken,
     fetchImpl = fetch,
     baseUrl = '/',
   } = options;
@@ -138,16 +136,12 @@ export async function createVerifyFetcher(options: VerifyFetcherOptions = {}): P
 
       return verifyFetch(resolvedUrl, {
         sri: artifactWithBase.sri,
-        signatureUrl: artifactWithBase.signature,
-        publicKey: publicKeys[0],
         fetchImpl,
       });
     }
 
     return verifyFetch(resolvedUrl, {
       sri: artifact.sri,
-      signatureUrl: artifact.signature,
-      publicKey: publicKeys[0],
       fetchImpl,
     });
   }

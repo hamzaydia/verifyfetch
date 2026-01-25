@@ -34,24 +34,6 @@ export interface VerifyFetchOptions {
   sri: SRIString;
 
   /**
-   * URL to fetch the detached signature from (optional)
-   * Mutually exclusive with `signature`
-   */
-  signatureUrl?: string;
-
-  /**
-   * Detached signature as ArrayBuffer (optional)
-   * Mutually exclusive with `signatureUrl`
-   */
-  signature?: ArrayBuffer;
-
-  /**
-   * Public key in PEM format for signature verification (optional)
-   * Required if signature/signatureUrl is provided
-   */
-  publicKey?: string;
-
-  /**
    * What to do when verification fails
    * @default 'block'
    */
@@ -85,18 +67,6 @@ export interface VerifyFetcherOptions {
    * Inline manifest object (alternative to manifestUrl)
    */
   manifest?: VFManifest;
-
-  /**
-   * Array of trusted public keys in PEM format
-   * Used to verify signatures on assets
-   */
-  publicKeys?: string[];
-
-  /**
-   * Policy token for VerifyFetch Cloud (optional)
-   * Short-lived JWT/JWS that encodes runtime policies
-   */
-  policyToken?: string;
 
   /**
    * Custom fetch implementation
@@ -141,12 +111,14 @@ export interface VFArtifact {
 
   /**
    * URL to detached signature file (optional)
+   * @remarks Reserved for v0.2 - Ed25519 signature verification
    */
   signature?: string;
 
   /**
    * Issuer of the signature (optional)
    * 'self' for self-signed, or key ID for managed keys
+   * @remarks Reserved for v0.2 - Ed25519 signature verification
    */
   issuer?: string;
 }
@@ -180,6 +152,7 @@ export class IntegrityError extends Error {
 
 /**
  * Error thrown when signature verification fails
+ * @remarks Reserved for v0.2 - Ed25519 signature verification is not yet implemented
  */
 export class SignatureError extends Error {
   public readonly url: string;

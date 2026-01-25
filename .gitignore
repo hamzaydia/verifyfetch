@@ -45,3 +45,8 @@ package-lock.json
 yarn.lock
 ROADMAP.md
 CLAUDE.md
+
+# Example build artifacts
+examples/**/node_modules/
+examples/**/.next/
+examples/**/dist/

@@ -37,7 +37,7 @@ export {
 } from './fetcher.js';
 
 // WASM loader utilities
-export { initWasm, createHasher, hash, validateSri } from './wasm-loader.js';
+export { initWasm, createHasher, hash, validateSri, isUsingWasm } from './wasm-loader.js';
 
 // Types
 export type {

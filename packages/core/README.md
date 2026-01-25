@@ -72,7 +72,7 @@ await verifyFetch('/model.bin', {
 ```typescript
 import { createVerifyFetcher } from 'verifyfetch';
 
-const vf = createVerifyFetcher({
+const vf = await createVerifyFetcher({
   manifestUrl: '/vf.manifest.json'
 });
 
@@ -101,9 +101,10 @@ npx @verifyfetch/cli sign ./public/*.wasm
 | Option | Type | Description |
 |--------|------|-------------|
 | `manifestUrl` | `string` | URL to manifest JSON |
-| `onFail` | `'block' \| 'warn'` | Default failure behavior |
+| `manifest` | `object` | Inline manifest (alternative to URL) |
+| `baseUrl` | `string` | Base URL for resolving paths |
 
-Returns object with: `arrayBuffer()`, `json()`, `text()`, `blob()`
+Returns object with: `fetch()`, `arrayBuffer()`, `json()`, `text()`, `blob()`, `preload()`, `reloadManifest()`
 
 ## Use Cases
 

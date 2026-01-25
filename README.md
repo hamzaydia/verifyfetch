@@ -147,7 +147,7 @@ const response = await verifyFetch('/file.bin', {
 ```typescript
 const vf = await createVerifyFetcher({
   manifestUrl: '/vf.manifest.json',
-  publicKeys: [PEM_KEY]           // Optional, for signatures
+  baseUrl: 'https://cdn.example.com'  // Optional
 });
 
 await vf.arrayBuffer('/file.wasm');
@@ -176,6 +176,69 @@ verifyfetch init --next         # Add to Next.js project
 ```
 
 ---
+
+## Examples
+
+See [`examples/`](./examples) for working code:
+
+- **[node-cli](./examples/node-cli/)** — Node.js usage
+- **[next-app](./examples/next-app/)** — Next.js + React hook
+- **[vite-app](./examples/vite-app/)** — Vite + TypeScript
+
+---
+
+<details>
+<summary><strong>Troubleshooting</strong></summary>
+
+### IntegrityError: Hash mismatch
+
+**Cause:** The file content doesn't match the expected SRI hash.
+
+**Solutions:**
+1. **File changed legitimately** - Regenerate the hash:
+   ```bash
+   npx verifyfetch sign ./path/to/file.bin
+   ```
+2. **CDN serving stale cache** - Clear CDN cache or use versioned URLs
+3. **Potential attack** - Investigate the source immediately
+
+### WASM not loading / SubtleCrypto fallback
+
+**Symptoms:** Console shows "Using SubtleCrypto fallback" or memory warning for large files.
+
+**Solutions:**
+1. Ensure WASM files are served with correct MIME type (`application/wasm`)
+2. Check CSP headers allow `wasm-eval` if using strict CSP
+3. For large files (>50MB), SubtleCrypto fallback buffers the entire file—ensure WASM works for best performance
+
+**Check WASM status:**
+```typescript
+import { isUsingWasm } from 'verifyfetch';
+
+if (!await isUsingWasm()) {
+  console.warn('WASM not available, using SubtleCrypto fallback');
+}
+```
+
+### Network errors
+
+**"Response body is null"** - The fetch completed but returned no body. This can happen with:
+- HEAD requests (use GET instead)
+- Some proxy configurations
+
+**"Failed to fetch"** - Network request failed. Check:
+- CORS configuration on the server
+- Network connectivity
+- URL is correct
+
+### Memory issues with large files
+
+VerifyFetch uses constant ~2MB memory **when WASM is available**. If you see memory spikes:
+
+1. Check if WASM is loading (see above)
+2. SubtleCrypto fallback buffers the entire file—expected behavior, but not ideal for multi-GB files
+
+</details>
 
 <details>
 <summary><strong>Security Model</strong></summary>

@@ -36,13 +36,13 @@ importers:
         specifier: ^0.468.0
         version: 0.468.0(react@19.2.3)
       next:
-        specifier: ^16.1.2
+        specifier: ^16.1.4
         version: 16.1.4(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       react:
-        specifier: ^19.0.0
+        specifier: ^19.2.0
         version: 19.2.3
       react-dom:
-        specifier: ^19.0.0
+        specifier: ^19.2.0
         version: 19.2.3(react@19.2.3)
       recharts:
         specifier: ^2.15.0
@@ -79,6 +79,50 @@ importers:
         specifier: ^8.20.0
         version: 8.53.1(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
 
+  examples/next-app:
+    dependencies:
+      next:
+        specifier: ^16.1.2
+        version: 16.1.4(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      react:
+        specifier: ^19.2.0
+        version: 19.2.3
+      react-dom:
+        specifier: ^19.2.0
+        version: 19.2.3(react@19.2.3)
+      verifyfetch:
+        specifier: workspace:*
+        version: link:../../packages/core
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.7
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.9
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+
+  examples/node-cli:
+    dependencies:
+      verifyfetch:
+        specifier: workspace:*
+        version: link:../../packages/core
+
+  examples/vite-app:
+    dependencies:
+      verifyfetch:
+        specifier: workspace:*
+        version: link:../../packages/core
+    devDependencies:
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vite:
+        specifier: ^7.3.1
+        version: 7.3.1(@types/node@22.19.7)(jiti@2.6.1)(lightningcss@1.30.2)
+
   packages/cli:
     dependencies:
       chalk:
@@ -94,8 +138,8 @@ importers:
         specifier: ^8.0.0
         version: 8.2.0
       verifyfetch:
-        specifier: ^0.1.0
-        version: 0.1.0
+        specifier: ^0.1.6
+        version: 0.1.6
     devDependencies:
       '@types/node':
         specifier: ^20.0.0
@@ -2429,8 +2473,8 @@ packages:
   uri-js@4.4.1:
     resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
 
-  verifyfetch@0.1.0:
-    resolution: {integrity: sha512-7+Sg33mmSMrFuLzYBXsSd+btOfwB4xeOByEExxZSwM1mFPoi5bEjRtj/RXW7fHDKmPjxtWwJB4xHERq0mWV8YQ==}
+  verifyfetch@0.1.6:
+    resolution: {integrity: sha512-VFkRwUvGSFOYoASM0PdqxuQW6untFiffGLrZbyGfjCv2E9hd5AgapcvNnsNYqom2nhpQTbWTu0ai8Eci/H3JSg==}
 
   victory-vendor@36.9.2:
     resolution: {integrity: sha512-PnpQQMuxlwYdocC8fIJqVXvkeViHYzotI+NJrCuav0ZYFoq912ZHBk3mCeuj+5/VpodOjPe1z0Fk2ihgzlXqjQ==}
@@ -2469,6 +2513,46 @@ packages:
       sugarss:
         optional: true
       terser:
+        optional: true
+
+  vite@7.3.1:
+    resolution: {integrity: sha512-w+N7Hifpc3gRjZ63vYBXA56dvvRlNWRczTdmCBBa+CotUzAPf5b7YMdMR/8CQoeYE5LX3W4wj6RYTgonm1b9DA==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    hasBin: true
+    peerDependencies:
+      '@types/node': ^20.19.0 || >=22.12.0
+      jiti: '>=1.21.0'
+      less: ^4.0.0
+      lightningcss: ^1.21.0
+      sass: ^1.70.0
+      sass-embedded: ^1.70.0
+      stylus: '>=0.54.8'
+      sugarss: ^5.0.0
+      terser: ^5.16.0
+      tsx: ^4.8.1
+      yaml: ^2.4.2
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
+      jiti:
+        optional: true
+      less:
+        optional: true
+      lightningcss:
+        optional: true
+      sass:
+        optional: true
+      sass-embedded:
+        optional: true
+      stylus:
+        optional: true
+      sugarss:
+        optional: true
+      terser:
+        optional: true
+      tsx:
+        optional: true
+      yaml:
         optional: true
 
   vitest@2.1.9:
@@ -4685,7 +4769,7 @@ snapshots:
     dependencies:
       punycode: 2.3.1
 
-  verifyfetch@0.1.0: {}
+  verifyfetch@0.1.6: {}
 
   victory-vendor@36.9.2:
     dependencies:
@@ -4730,6 +4814,20 @@ snapshots:
     optionalDependencies:
       '@types/node': 20.19.30
       fsevents: 2.3.3
+      lightningcss: 1.30.2
+
+  vite@7.3.1(@types/node@22.19.7)(jiti@2.6.1)(lightningcss@1.30.2):
+    dependencies:
+      esbuild: 0.27.2
+      fdir: 6.5.0(picomatch@4.0.3)
+      picomatch: 4.0.3
+      postcss: 8.5.6
+      rollup: 4.56.0
+      tinyglobby: 0.2.15
+    optionalDependencies:
+      '@types/node': 22.19.7
+      fsevents: 2.3.3
+      jiti: 2.6.1
       lightningcss: 1.30.2
 
   vitest@2.1.9(@types/node@20.19.30)(lightningcss@1.30.2):

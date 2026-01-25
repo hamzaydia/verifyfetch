@@ -1,0 +1,13 @@
+{
+  "name": "verifyfetch-node-example",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Example: Using VerifyFetch in Node.js",
+  "scripts": {
+    "start": "node index.js",
+    "generate-manifest": "npx verifyfetch sign ./assets/*.json --out vf.manifest.json"
+  },
+  "dependencies": {
+    "verifyfetch": "workspace:*"
+  }
+}
