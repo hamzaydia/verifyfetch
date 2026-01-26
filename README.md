@@ -36,7 +36,7 @@ const response = await verifyFetch('/model.bin', {
 
 ## Why?
 
-Browser SRI only works on `<script>` tags. **`fetch()` has no protection.**
+Browser SRI only works on `<script>` tags. **`fetch()` has no protection.** ([W3C issue open since 2017](https://github.com/w3c/webappsec-subresource-integrity/issues/68))
 
 Your WASM modules, AI models, and binary files? Completely unverified. One CDN compromise = malicious code in your users' browsers. [It's happened before.](https://sansec.io/research/polyfill-supply-chain-attack)
 
@@ -273,6 +273,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 </details>
 
 ---
+
+<p align="center">
+  If this helps protect your app, consider giving it a ⭐
+</p>
 
 <p align="center">
   <a href="https://verifyfetch.com">Docs</a> •
