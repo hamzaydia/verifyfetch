@@ -28,25 +28,21 @@ export function Problem() {
               </div>
               <div>
                 <p className="text-xl text-zinc-200 mb-2">
-                  Browser SRI only works on{' '}
-                  <code className="text-primary bg-primary/10 px-2 py-0.5 rounded">
-                    {'<script>'}
-                  </code>{' '}
-                  tags.
-                </p>
-                <p className="text-lg text-zinc-400">
-                  Your{' '}
                   <code className="text-primary bg-primary/10 px-2 py-0.5 rounded">
                     fetch()
                   </code>{' '}
-                  calls are completely unprotected.
+                  has integrity, but it{' '}
+                  <strong>buffers the entire file</strong> first.
+                </p>
+                <p className="text-lg text-zinc-400">
+                  A 4GB AI model needs 4GB+ RAM just to verify the hash.
                 </p>
               </div>
             </div>
 
             <div className="border-l-2 border-red-500/50 pl-6 py-4 bg-red-500/5 rounded-r-lg">
               <p className="text-zinc-300 mb-3">
-                Your WASM modules, AI models, and binary files? Completely unverified.
+                Large WASM modules and AI models? Native verification crashes your browser.
               </p>
               <p className="text-zinc-400">
                 One CDN compromise = malicious code in your users' browsers.

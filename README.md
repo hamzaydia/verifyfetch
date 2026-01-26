@@ -36,13 +36,13 @@ const response = await verifyFetch('/model.bin', {
 
 ## Why?
 
-Browser SRI only works on `<script>` tags. **`fetch()` has no protection.** ([W3C issue open since 2017](https://github.com/w3c/webappsec-subresource-integrity/issues/68))
+`fetch()` has an integrity option, but it **buffers the entire file before verifying**. ([WHATWG spec requires "fully read"](https://github.com/whatwg/fetch/issues/1754))
 
-Your WASM modules, AI models, and binary files? Completely unverified. One CDN compromise = malicious code in your users' browsers. [It's happened before.](https://sansec.io/research/polyfill-supply-chain-attack)
+Try verifying a 4GB AI model and your browser crashes—it needs 4GB+ RAM just to check the hash. [CDN compromises happen.](https://sansec.io/research/polyfill-supply-chain-attack) You need integrity checks that actually work for large files.
 
 ### The Problem with Native Solutions
 
-Native `crypto.subtle.digest()` loads the **entire file into memory** before hashing:
+Both `fetch({ integrity })` and `crypto.subtle.digest()` load the **entire file into memory** before hashing:
 
 | File Size | Native | VerifyFetch |
 |-----------|--------|-------------|
