@@ -37,22 +37,22 @@ export function Tools() {
   const isInView = useInView(ref, { once: true, margin: '-100px' });
 
   return (
-    <section ref={ref} className="py-24 px-6">
+    <section ref={ref} className="py-12 sm:py-16 md:py-24 px-4 sm:px-6">
       <div className="max-w-5xl mx-auto">
         <motion.div
           initial={{ y: 40, opacity: 0 }}
           animate={isInView ? { y: 0, opacity: 1 } : {}}
           transition={{ duration: 0.6 }}
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-3 sm:mb-4">
             Free Security Tools
           </h2>
-          <p className="text-zinc-400 text-center mb-12 max-w-2xl mx-auto">
+          <p className="text-zinc-400 text-center text-sm sm:text-base mb-8 sm:mb-10 md:mb-12 max-w-2xl mx-auto">
             Powerful browser-based tools to help you secure your applications.
             No installation required.
           </p>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
             {tools.map((tool, i) => (
               <motion.a
                 key={tool.title}
@@ -67,9 +67,9 @@ export function Tools() {
                   className={`absolute inset-0 bg-gradient-to-br ${tool.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
                 />
 
-                <div className="relative p-6">
+                <div className="relative p-4 sm:p-6">
                   <div className="p-3 w-fit rounded-lg bg-zinc-800 text-zinc-300 mb-4 group-hover:bg-zinc-700 transition-colors">
-                    <tool.icon className="w-6 h-6" />
+                    <tool.icon className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
 
                   <h3 className="font-semibold text-white text-lg mb-2">

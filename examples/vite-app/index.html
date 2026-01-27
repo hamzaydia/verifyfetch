@@ -10,7 +10,7 @@
       }
       body {
         font-family: system-ui, -apple-system, sans-serif;
-        max-width: 800px;
+        max-width: 900px;
         margin: 0 auto;
         padding: 2rem;
         background: #f5f5f5;
@@ -18,12 +18,25 @@
       h1 {
         color: #333;
       }
+      h2 {
+        color: #444;
+        margin-top: 0;
+      }
+      .subtitle {
+        color: #666;
+        margin-top: -0.5rem;
+        font-size: 0.9rem;
+      }
       .card {
         background: white;
         border-radius: 8px;
         padding: 1.5rem;
         margin: 1rem 0;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .card-green {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
       }
       button {
         background: #10b981;
@@ -34,6 +47,7 @@
         font-size: 1rem;
         cursor: pointer;
         margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
       }
       button:hover {
         background: #059669;
@@ -41,6 +55,12 @@
       button:disabled {
         background: #9ca3af;
         cursor: not-allowed;
+      }
+      button.secondary {
+        background: #0070f3;
+      }
+      button.secondary:hover {
+        background: #0051a8;
       }
       .progress-bar {
         width: 100%;
@@ -61,6 +81,7 @@
         margin-top: 1rem;
         font-family: monospace;
         white-space: pre-wrap;
+        font-size: 0.9rem;
       }
       .success {
         background: #d1fae5;
@@ -77,18 +98,45 @@
         border-radius: 4px;
         display: block;
         overflow-x: auto;
+        font-size: 0.85rem;
+        line-height: 1.5;
+      }
+      .feature-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1rem 0;
+      }
+      .feature-table th, .feature-table td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      .feature-table th {
+        background: #f9fafb;
+        font-weight: 600;
+      }
+      .note {
+        background: #fef3c7;
+        border: 1px solid #fcd34d;
+        padding: 0.75rem 1rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        color: #92400e;
+        margin-top: 1rem;
       }
     </style>
   </head>
   <body>
-    <h1>🔒 VerifyFetch Vite Example</h1>
+    <h1>VerifyFetch Vite Example</h1>
+    <p class="subtitle">v0.2.0 features: Streaming, Multi-CDN, Service Worker, Merkle Tree</p>
 
+    <!-- Basic Fetch -->
     <div class="card">
-      <h2>CDN Asset Verification</h2>
-      <p>Fetch files from CDN and verify their integrity before use.</p>
+      <h2>1. Basic Verified Fetch</h2>
+      <p>Uses <code style="display:inline;padding:0.2rem 0.4rem;">verifyFetch()</code> - buffers response (convenient, O(n) memory)</p>
 
-      <button id="fetch-json">Fetch JSON</button>
-      <button id="fetch-js">Fetch JavaScript</button>
+      <button id="fetch-json" class="secondary">Fetch JSON</button>
+      <button id="fetch-js" class="secondary">Fetch JavaScript</button>
 
       <div class="progress-bar">
         <div class="progress-fill" id="progress" style="width: 0%"></div>
@@ -97,20 +145,85 @@
       <div id="result"></div>
     </div>
 
+    <!-- Streaming Fetch -->
+    <div class="card card-green">
+      <h2>2. Streaming Verification (v0.2.0)</h2>
+      <p>Uses <code style="display:inline;padding:0.2rem 0.4rem;">verifyFetchStream()</code> - constant ~2MB memory</p>
+
+      <button id="fetch-stream">Stream & Verify</button>
+
+      <div class="progress-bar">
+        <div class="progress-fill" id="stream-progress" style="width: 0%"></div>
+      </div>
+
+      <div id="stream-result"></div>
+
+      <div class="note">
+        <strong>Note:</strong> Basic <code style="display:inline;padding:0.1rem 0.3rem;background:#1e1e1e;">verifyFetch()</code> buffers the response (same as native fetch).
+        Use <code style="display:inline;padding:0.1rem 0.3rem;background:#1e1e1e;">verifyFetchStream()</code> for large files.
+      </div>
+    </div>
+
+    <!-- v0.2.0 Features -->
     <div class="card">
-      <h2>Code Example</h2>
-      <code>
-import { verifyFetch } from 'verifyfetch';
+      <h2>v0.2.0 Features</h2>
+      <table class="feature-table">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>API</th>
+            <th>Use Case</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Streaming</td>
+            <td><code style="display:inline;padding:0.2rem 0.4rem;">verifyFetchStream()</code></td>
+            <td>Large files (AI models, WASM)</td>
+          </tr>
+          <tr>
+            <td>Multi-CDN</td>
+            <td><code style="display:inline;padding:0.2rem 0.4rem;">verifyFetchFromSources()</code></td>
+            <td>Failover if CDN compromised</td>
+          </tr>
+          <tr>
+            <td>Service Worker</td>
+            <td><code style="display:inline;padding:0.2rem 0.4rem;">createVerifyWorker()</code></td>
+            <td>Zero-code verification</td>
+          </tr>
+          <tr>
+            <td>Merkle Tree</td>
+            <td><code style="display:inline;padding:0.2rem 0.4rem;">npx verifyfetch sign --merkle</code></td>
+            <td>Fail-fast on corruption</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-// Fetch and verify in one step
-const response = await verifyFetch(
-  'https://cdn.example.com/asset.js',
-  { sri: 'sha256-...' }
-);
+    <!-- Code Examples -->
+    <div class="card">
+      <h2>Code Examples</h2>
 
-// Safe to use - integrity verified!
-const data = await response.text();
-      </code>
+      <h3>Basic Fetch</h3>
+      <code>import { verifyFetch } from 'verifyfetch';
+
+const response = await verifyFetch('/model.bin', {
+  sri: 'sha256-...'
+});
+const data = await response.arrayBuffer();</code>
+
+      <h3 style="margin-top: 1.5rem;">Streaming (Constant Memory)</h3>
+      <code>import { verifyFetchStream } from 'verifyfetch';
+
+const { stream, verified } = await verifyFetchStream('/model.bin', {
+  sri: 'sha256-...'
+});
+
+for await (const chunk of stream) {
+  await uploadToGPU(chunk); // Process immediately
+}
+
+await verified; // Throws if hash doesn't match</code>
     </div>
 
     <script type="module" src="/src/main.ts"></script>

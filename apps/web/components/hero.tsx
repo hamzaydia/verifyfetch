@@ -15,7 +15,7 @@ export function Hero() {
   };
 
   return (
-    <section className="min-h-screen flex items-center justify-center pt-20 pb-16 px-6">
+    <section className="min-h-screen flex items-center justify-center pt-12 sm:pt-16 md:pt-20 pb-10 sm:pb-12 md:pb-16 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto text-center">
         {/* Logo */}
         <motion.div
@@ -38,7 +38,7 @@ export function Hero() {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="text-4xl md:text-6xl font-bold mb-6 leading-tight"
+          className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold mb-4 sm:mb-6 leading-tight"
         >
           Verify any file you fetch
           <br />
@@ -50,11 +50,11 @@ export function Hero() {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className="text-xl text-zinc-400 mb-10 max-w-2xl mx-auto"
+          className="text-base sm:text-lg md:text-xl text-zinc-400 mb-6 sm:mb-8 md:mb-10 max-w-2xl mx-auto"
         >
           Streaming integrity verification for WASM, AI models, and large files.
           <br />
-          <span className="text-zinc-500">SRI for fetch() with constant 2MB memory.</span>
+          <span className="text-zinc-500">Fail-fast Merkle trees. Zero-code Service Worker. Multi-CDN failover.</span>
         </motion.p>
 
         {/* Install Command */}
@@ -66,10 +66,10 @@ export function Hero() {
         >
           <button
             onClick={handleCopy}
-            className="group inline-flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-lg px-6 py-3 hover:border-primary/50 transition-all"
+            className="group inline-flex items-center gap-2 sm:gap-3 bg-zinc-900 border border-zinc-800 rounded-lg px-3 sm:px-4 md:px-6 py-2 sm:py-3 hover:border-primary/50 transition-all"
           >
             <span className="text-zinc-500">$</span>
-            <code className="text-zinc-200">npm install verifyfetch</code>
+            <code className="text-zinc-200 text-sm sm:text-base">npm install verifyfetch</code>
             {copied ? (
               <Check className="w-4 h-4 text-primary" />
             ) : (
@@ -86,7 +86,7 @@ export function Hero() {
           className="flex flex-col sm:flex-row items-center justify-center gap-4"
         >
           <a
-            href="https://github.com/hamzaydia/verifyfetch#readme"
+            href="#get-started"
             className="btn-primary"
           >
             Get Started
@@ -108,29 +108,51 @@ export function Hero() {
           initial={{ y: 40, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.6 }}
-          className="mt-16"
+          className="mt-8 sm:mt-12 md:mt-16"
         >
-          <div className="code-block text-left max-w-xl mx-auto">
-            <pre className="text-sm">
-              <code>
-                <span className="text-purple-400">import</span>
-                {' { verifyFetch } '}
-                <span className="text-purple-400">from</span>
-                {' '}
-                <span className="text-emerald-400">'verifyfetch'</span>
-                ;{'\n\n'}
-                <span className="text-purple-400">const</span>
-                {' response = '}
-                <span className="text-purple-400">await</span>
-                {' '}
-                <span className="text-blue-400">verifyFetch</span>
-                (<span className="text-emerald-400">'/model.bin'</span>, {'{\n'}
-                {'  sri: '}
-                <span className="text-emerald-400">'sha256-uU0nuZNN...'</span>
-                {'\n}'});{'\n\n'}
-                <span className="text-zinc-500">// That's it. Throws if hash doesn't match.</span>
-              </code>
-            </pre>
+          <div className="max-w-xl mx-auto rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950 shadow-2xl shadow-primary/5">
+            {/* Window Chrome */}
+            <div className="flex items-center gap-2 px-4 py-3 bg-zinc-900/80 border-b border-zinc-800">
+              <div className="flex gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                <div className="w-3 h-3 rounded-full bg-green-500/80" />
+              </div>
+              <span className="text-xs text-zinc-500 ml-2 font-mono">app.ts</span>
+            </div>
+            {/* Code Content */}
+            <div className="p-4 sm:p-5 text-left">
+              <pre className="text-xs sm:text-sm leading-relaxed">
+                <code>
+                  <span className="text-purple-400">import</span>
+                  <span className="text-zinc-300">{' { '}</span>
+                  <span className="text-yellow-300">verifyFetch</span>
+                  <span className="text-zinc-300">{' } '}</span>
+                  <span className="text-purple-400">from</span>
+                  {' '}
+                  <span className="text-emerald-400">'verifyfetch'</span>
+                  <span className="text-zinc-300">;</span>
+                  {'\n\n'}
+                  <span className="text-purple-400">const</span>
+                  <span className="text-zinc-300">{' response = '}</span>
+                  <span className="text-purple-400">await</span>
+                  {' '}
+                  <span className="text-blue-400">verifyFetch</span>
+                  <span className="text-zinc-300">(</span>
+                  <span className="text-emerald-400">'/model.bin'</span>
+                  <span className="text-zinc-300">, {'{'}</span>
+                  {'\n'}
+                  <span className="text-zinc-300">{'  '}</span>
+                  <span className="text-cyan-300">sri</span>
+                  <span className="text-zinc-300">: </span>
+                  <span className="text-emerald-400">'sha256-uU0nuZNN...'</span>
+                  {'\n'}
+                  <span className="text-zinc-300">{'}'});</span>
+                  {'\n\n'}
+                  <span className="text-zinc-600">// Throws if tampered. Zero config.</span>
+                </code>
+              </pre>
+            </div>
           </div>
         </motion.div>
       </div>

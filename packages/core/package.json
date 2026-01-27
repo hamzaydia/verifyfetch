@@ -1,6 +1,6 @@
 {
   "name": "verifyfetch",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "description": "Verify any file you fetch—before you trust it. Streaming integrity verification for WASM, AI models, and large files.",
   "type": "module",
   "main": "./dist/index.js",
@@ -14,6 +14,10 @@
     "./auto": {
       "import": "./dist/auto.js",
       "types": "./dist/auto.d.ts"
+    },
+    "./worker": {
+      "import": "./dist/worker.js",
+      "types": "./dist/worker.d.ts"
     }
   },
   "files": [

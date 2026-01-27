@@ -138,8 +138,8 @@ importers:
         specifier: ^8.0.0
         version: 8.2.0
       verifyfetch:
-        specifier: ^0.1.6
-        version: 0.1.6
+        specifier: workspace:^
+        version: link:../core
     devDependencies:
       '@types/node':
         specifier: ^20.0.0
@@ -2473,9 +2473,6 @@ packages:
   uri-js@4.4.1:
     resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
 
-  verifyfetch@0.1.6:
-    resolution: {integrity: sha512-VFkRwUvGSFOYoASM0PdqxuQW6untFiffGLrZbyGfjCv2E9hd5AgapcvNnsNYqom2nhpQTbWTu0ai8Eci/H3JSg==}
-
   victory-vendor@36.9.2:
     resolution: {integrity: sha512-PnpQQMuxlwYdocC8fIJqVXvkeViHYzotI+NJrCuav0ZYFoq912ZHBk3mCeuj+5/VpodOjPe1z0Fk2ihgzlXqjQ==}
 
@@ -4768,8 +4765,6 @@ snapshots:
   uri-js@4.4.1:
     dependencies:
       punycode: 2.3.1
-
-  verifyfetch@0.1.6: {}
 
   victory-vendor@36.9.2:
     dependencies:

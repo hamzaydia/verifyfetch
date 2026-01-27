@@ -1,6 +1,6 @@
 {
   "name": "@verifyfetch/cli",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "description": "Generate SRI hashes and enforce file integrity in CI/CD. Works with WASM, AI models, and any binary files.",
   "type": "module",
   "bin": {
@@ -15,7 +15,7 @@
     "test": "vitest --passWithNoTests"
   },
   "dependencies": {
-    "verifyfetch": "^0.1.6",
+    "verifyfetch": "workspace:^",
     "commander": "^12.0.0",
     "chalk": "^5.3.0",
     "glob": "^10.3.0",

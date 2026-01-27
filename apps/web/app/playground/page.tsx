@@ -454,11 +454,11 @@ export default function PlaygroundPage() {
           >
             <h2 className="text-xl font-semibold mb-2 flex items-center gap-2">
               <Zap className="w-5 h-5 text-primary" />
-              Memory Usage Comparison
+              Memory Usage: Streaming vs Buffered
             </h2>
             <p className="text-zinc-400 text-sm mb-6">
-              Native <code className="text-zinc-300">crypto.subtle.digest()</code> loads entire files into memory.
-              VerifyFetch streams with constant 2MB usage.
+              Native <code className="text-zinc-300">fetch</code> with integrity buffers entire files.
+              Use <code className="text-zinc-300">verifyFetchStream()</code> to process chunks with constant ~2MB memory.
             </p>
 
             <div className="h-80">
@@ -521,13 +521,16 @@ export default function PlaygroundPage() {
             <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-8 mt-4">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded bg-red-500" />
-                <span className="text-sm text-zinc-400">Native (loads entire file)</span>
+                <span className="text-sm text-zinc-400">Buffered (fetch + integrity)</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded bg-emerald-500" />
-                <span className="text-sm text-zinc-400">VerifyFetch (constant 2MB)</span>
+                <span className="text-sm text-zinc-400">verifyFetchStream() (~2MB)</span>
               </div>
             </div>
+            <p className="text-xs text-zinc-600 text-center mt-3">
+              Note: Basic <code>verifyFetch()</code> also buffers the response. Use <code>verifyFetchStream()</code> for large files.
+            </p>
           </motion.section>
 
           {/* CTA */}

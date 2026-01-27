@@ -9,6 +9,7 @@ const tabs = [
   {
     id: 'basic',
     label: 'Basic',
+    filename: 'app.ts',
     code: `import { verifyFetch } from 'verifyfetch';
 
 // Verify a file against its SRI hash
@@ -20,52 +21,169 @@ const response = await verifyFetch('/model.bin', {
 const model = await response.arrayBuffer();`,
   },
   {
-    id: 'fallback',
-    label: 'With Fallback',
-    code: `import { verifyFetch } from 'verifyfetch';
+    id: 'streaming',
+    label: 'Streaming',
+    filename: 'stream.ts',
+    code: `import { verifyFetchStream } from 'verifyfetch';
 
-// Auto-retry from backup server on failure
-const response = await verifyFetch('/engine.wasm', {
-  sri: 'sha256-abc123...',
-  onFail: { fallbackUrl: 'https://backup.cdn.com/engine.wasm' }
+// Process chunks as they download - constant memory
+const { stream, verified } = await verifyFetchStream('/model.bin', {
+  sri: 'sha256-...'
 });
 
-// Or just warn instead of blocking
-const wasm = await verifyFetch('/plugin.wasm', {
-  sri: 'sha256-xyz789...',
-  onFail: 'warn' // logs warning, continues anyway
-});`,
+for await (const chunk of stream) {
+  await uploadToGPU(chunk); // Process immediately
+}
+
+await verified; // Throws if hash doesn't match`,
   },
   {
-    id: 'manifest',
-    label: 'Manifest Mode',
-    code: `import { createVerifyFetcher } from 'verifyfetch';
+    id: 'worker',
+    label: 'Service Worker',
+    filename: 'sw.js',
+    code: `// sw.js - One-time setup
+import { createVerifyWorker } from 'verifyfetch/worker';
 
-// Load manifest with all your SRI hashes
-const vf = await createVerifyFetcher({
-  manifestUrl: '/vf.manifest.json'
+createVerifyWorker({
+  manifestUrl: '/vf.manifest.json',
+  include: ['*.wasm', '*.bin', '*.onnx'],
+  onFail: 'block'
 });
 
-// Hashes are looked up automatically
-const model = await vf.arrayBuffer('/models/phi-3.bin');
-const config = await vf.json('/config/settings.json');
-const wasm = await vf.arrayBuffer('/engine.wasm');`,
+// app.js - No changes needed!
+const model = await fetch('/model.bin'); // Auto-verified!`,
+  },
+  {
+    id: 'multicdn',
+    label: 'Multi-CDN',
+    filename: 'failover.ts',
+    code: `import { verifyFetchFromSources } from 'verifyfetch';
+
+// Automatic failover across CDNs
+const response = await verifyFetchFromSources(
+  'sha256-abc123...',
+  '/model.bin',
+  {
+    sources: [
+      'https://cdn1.example.com',
+      'https://cdn2.example.com'
+    ],
+    strategy: 'race' // or 'sequential', 'fastest'
+  }
+);`,
   },
   {
     id: 'cli',
     label: 'CLI',
+    filename: 'terminal',
     code: `# Generate hashes for your files
-npx @verifyfetch/cli sign ./public/*.wasm ./models/*.bin
-# Output: vf.manifest.json with all SRI hashes
+npx verifyfetch sign ./public/*.wasm ./models/*.bin
+
+# With Merkle tree (fail-fast for large files)
+npx verifyfetch sign --merkle ./large-model.bin
 
 # Verify files match their hashes (for CI/CD)
-npx @verifyfetch/cli enforce
-
-# Generate hash for a single file
-npx @verifyfetch/cli sign ./public/engine.wasm
-# sha256-uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=`,
+npx verifyfetch enforce --manifest ./vf.manifest.json`,
   },
 ];
+
+// Simple syntax highlighter
+function highlightCode(code: string, isTerminal: boolean = false): React.ReactNode[] {
+  const lines = code.split('\n');
+
+  return lines.map((line, lineIndex) => {
+    if (isTerminal) {
+      // Terminal highlighting
+      if (line.startsWith('#')) {
+        return (
+          <span key={lineIndex}>
+            <span className="text-zinc-500">{line}</span>
+            {lineIndex < lines.length - 1 && '\n'}
+          </span>
+        );
+      }
+      // Highlight commands
+      const parts = line.split(' ');
+      return (
+        <span key={lineIndex}>
+          {parts.map((part, i) => {
+            if (i === 0 && (part === 'npx' || part === 'npm')) {
+              return <span key={i} className="text-emerald-400">{part}</span>;
+            } else if (part === 'verifyfetch' || part === 'sign' || part === 'enforce') {
+              return <span key={i}><span className="text-blue-400">{part}</span></span>;
+            } else if (part.startsWith('--')) {
+              return <span key={i}><span className="text-yellow-300">{part}</span></span>;
+            } else if (part.startsWith('./') || part.startsWith('*.')) {
+              return <span key={i}><span className="text-cyan-300">{part}</span></span>;
+            } else {
+              return <span key={i} className="text-zinc-300">{part}</span>;
+            }
+          }).reduce((prev, curr, i) => i === 0 ? [curr] : [...prev, ' ', curr], [] as React.ReactNode[])}
+          {lineIndex < lines.length - 1 && '\n'}
+        </span>
+      );
+    }
+
+    // JavaScript/TypeScript highlighting
+    const segments: React.ReactNode[] = [];
+    let remaining = line;
+    let keyCounter = 0;
+
+    while (remaining.length > 0) {
+      // Comments
+      const commentMatch = remaining.match(/^(\/\/.*)/);
+      if (commentMatch) {
+        segments.push(<span key={keyCounter++} className="text-zinc-500">{commentMatch[1]}</span>);
+        remaining = remaining.slice(commentMatch[1].length);
+        continue;
+      }
+
+      // Strings (single and double quotes)
+      const stringMatch = remaining.match(/^('[^']*'|"[^"]*")/);
+      if (stringMatch) {
+        segments.push(<span key={keyCounter++} className="text-emerald-400">{stringMatch[1]}</span>);
+        remaining = remaining.slice(stringMatch[1].length);
+        continue;
+      }
+
+      // Keywords
+      const keywordMatch = remaining.match(/^(import|export|from|const|let|var|await|async|for|if|else|return|function|default)\b/);
+      if (keywordMatch) {
+        segments.push(<span key={keyCounter++} className="text-purple-400">{keywordMatch[1]}</span>);
+        remaining = remaining.slice(keywordMatch[1].length);
+        continue;
+      }
+
+      // Special functions (verifyFetch variants)
+      const funcMatch = remaining.match(/^(verifyFetch|verifyFetchStream|verifyFetchFromSources|createVerifyWorker|fetch|uploadToGPU)\b/);
+      if (funcMatch) {
+        segments.push(<span key={keyCounter++} className="text-blue-400">{funcMatch[1]}</span>);
+        remaining = remaining.slice(funcMatch[1].length);
+        continue;
+      }
+
+      // Object keys (word followed by colon)
+      const keyMatch = remaining.match(/^(\w+)(:)/);
+      if (keyMatch) {
+        segments.push(<span key={keyCounter++} className="text-cyan-300">{keyMatch[1]}</span>);
+        segments.push(<span key={keyCounter++} className="text-zinc-400">{keyMatch[2]}</span>);
+        remaining = remaining.slice(keyMatch[0].length);
+        continue;
+      }
+
+      // Default: take one character
+      segments.push(<span key={keyCounter++} className="text-zinc-300">{remaining[0]}</span>);
+      remaining = remaining.slice(1);
+    }
+
+    return (
+      <span key={lineIndex}>
+        {segments}
+        {lineIndex < lines.length - 1 && '\n'}
+      </span>
+    );
+  });
+}
 
 export function CodeExamples() {
   const ref = useRef(null);
@@ -73,7 +191,9 @@ export function CodeExamples() {
   const [activeTab, setActiveTab] = useState('basic');
   const [copied, setCopied] = useState(false);
 
-  const activeCode = tabs.find((t) => t.id === activeTab)?.code || '';
+  const activeExample = tabs.find((t) => t.id === activeTab);
+  const activeCode = activeExample?.code || '';
+  const isTerminal = activeTab === 'cli';
 
   const handleCopy = () => {
     navigator.clipboard.writeText(activeCode);
@@ -82,18 +202,18 @@ export function CodeExamples() {
   };
 
   return (
-    <section ref={ref} className="py-24 px-6">
+    <section ref={ref} className="py-12 sm:py-16 md:py-24 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto">
         <motion.div
           initial={{ y: 40, opacity: 0 }}
           animate={isInView ? { y: 0, opacity: 1 } : {}}
           transition={{ duration: 0.6 }}
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-3 sm:mb-4">
             Simple API, Powerful Protection
           </h2>
-          <p className="text-zinc-400 text-center mb-12 max-w-2xl mx-auto">
-            One function. Any file size. Zero memory issues.
+          <p className="text-zinc-400 text-center text-sm sm:text-base mb-8 sm:mb-10 md:mb-12 max-w-2xl mx-auto">
+            Multiple ways to protect your assets. Choose what fits your needs.
           </p>
 
           {/* Tab Buttons */}
@@ -102,7 +222,7 @@ export function CodeExamples() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                   activeTab === tab.id
                     ? 'bg-primary text-white'
                     : 'bg-zinc-800 text-zinc-400 hover:text-white'
@@ -113,26 +233,39 @@ export function CodeExamples() {
             ))}
           </div>
 
-          {/* Code Block */}
-          <div className="relative">
-            <button
-              onClick={handleCopy}
-              className="absolute top-4 right-4 p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors"
-            >
-              {copied ? (
-                <Check className="w-4 h-4 text-primary" />
-              ) : (
-                <Copy className="w-4 h-4 text-zinc-400" />
-              )}
-            </button>
+          {/* Code Block with Window Chrome */}
+          <div className="rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/50">
+            {/* Window Chrome */}
+            <div className="flex items-center justify-between px-4 py-3 bg-zinc-900/80 border-b border-zinc-800">
+              <div className="flex items-center gap-3">
+                <div className="flex gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                  <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                  <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                </div>
+                <span className="text-xs text-zinc-500 font-mono">{activeExample?.filename}</span>
+              </div>
+              <button
+                onClick={handleCopy}
+                className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors"
+              >
+                {copied ? (
+                  <Check className="w-4 h-4 text-primary" />
+                ) : (
+                  <Copy className="w-4 h-4 text-zinc-400" />
+                )}
+              </button>
+            </div>
+
+            {/* Code Content */}
             <motion.div
               key={activeTab}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="code-block"
+              className="p-4 sm:p-5 overflow-x-auto"
             >
-              <pre className="text-sm leading-relaxed">
-                <code className="text-zinc-300">{activeCode}</code>
+              <pre className="text-xs sm:text-sm leading-relaxed font-mono">
+                <code>{highlightCode(activeCode, isTerminal)}</code>
               </pre>
             </motion.div>
           </div>

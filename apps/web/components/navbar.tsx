@@ -34,7 +34,7 @@ export function Navbar() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between">
         <a href="/" className="flex items-center gap-2 sm:gap-3 min-w-0">
           <Image src="/logo.svg" alt="VerifyFetch" width={32} height={32} className="flex-shrink-0" />
-          <span className="font-semibold text-lg truncate">VerifyFetch</span>
+          <span className="font-semibold text-base sm:text-lg truncate">VerifyFetch</span>
         </a>
 
         {/* Desktop Navigation */}

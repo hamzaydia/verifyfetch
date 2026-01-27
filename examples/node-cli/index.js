@@ -2,10 +2,17 @@
  * VerifyFetch Node.js Example
  *
  * This example demonstrates how to use VerifyFetch to verify file integrity
- * in a Node.js environment.
+ * in a Node.js environment, including v0.2.0 features.
  */
 
-import { verifyFetch, createVerifyFetcher, computeSri, isUsingWasm } from 'verifyfetch';
+import {
+  verifyFetch,
+  verifyFetchStream,
+  verifyFetchFromSources,
+  createVerifyFetcher,
+  computeSri,
+  isUsingWasm,
+} from 'verifyfetch';
 
 // Example 1: Basic verification with inline SRI
 async function basicVerification() {
@@ -27,14 +34,14 @@ async function basicVerification() {
   }
 }
 
-// Example 2: Using manifest-based verification
+// Example 2: Using manifest-based verification (v2 format)
 async function manifestVerification() {
-  console.log('\n=== Example 2: Manifest-Based Verification ===\n');
+  console.log('\n=== Example 2: Manifest-Based Verification (v2) ===\n');
 
   // Create a manifest inline (in production, load from file)
+  // v2 format: no 'base' field, artifacts directly
   const manifest = {
-    version: 1,
-    base: 'https://cdn.jsdelivr.net/npm/',
+    version: 2,
     artifacts: {
       '/lodash@4.17.21/package.json': {
         sri: 'sha256-jkGwfHRKDeDSwcI+1BQY7LCEmrtWOV0ogC5gG0cw18I=',
@@ -99,33 +106,110 @@ async function progressTracking() {
   }
 }
 
-// Example 5: Check WASM availability
+// Example 5: Streaming verification (v0.2.0 feature)
+async function streamingVerification() {
+  console.log('\n=== Example 5: Streaming Verification (v0.2.0) ===\n');
+
+  const url = 'https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js';
+  const sri = 'sha256-qXBd/EfAdjOA2FGrGAG+b3YBn2tn5A6bhz+LSgYD96k=';
+
+  try {
+    // verifyFetchStream returns a stream you can consume immediately
+    // This enables constant memory usage for large files
+    const { stream, verified } = await verifyFetchStream(url, { sri });
+
+    let totalBytes = 0;
+    let chunkCount = 0;
+
+    // Process chunks as they arrive - no buffering needed
+    for await (const chunk of stream) {
+      totalBytes += chunk.length;
+      chunkCount++;
+      // In a real app: await uploadToGPU(chunk) or process immediately
+    }
+
+    // Wait for final verification
+    await verified;
+
+    console.log('✓ Streaming verification complete!');
+    console.log(`  Total bytes: ${totalBytes}`);
+    console.log(`  Chunks processed: ${chunkCount}`);
+    console.log('  Memory: Constant ~2MB (streaming hash)');
+  } catch (error) {
+    console.error('✗ Streaming verification failed:', error.message);
+  }
+}
+
+// Example 6: Multi-CDN failover (v0.2.0 feature)
+async function multiCdnFailover() {
+  console.log('\n=== Example 6: Multi-CDN Failover (v0.2.0) ===\n');
+
+  const sri = 'sha256-jkGwfHRKDeDSwcI+1BQY7LCEmrtWOV0ogC5gG0cw18I=';
+  const path = '/npm/lodash@4.17.21/package.json';
+
+  try {
+    // Try multiple CDNs - first valid response wins
+    const response = await verifyFetchFromSources(
+      sri,
+      path,
+      {
+        sources: [
+          'https://cdn.jsdelivr.net',     // Primary
+          'https://unpkg.com',            // Backup 1
+          'https://cdnjs.cloudflare.com', // Backup 2
+        ],
+        strategy: 'sequential', // Try in order until one works
+      }
+    );
+
+    const data = await response.json();
+    console.log('✓ Multi-CDN fetch successful!');
+    console.log(`  Package: ${data.name}@${data.version}`);
+    console.log('  If one CDN is compromised or down, others are tried.');
+  } catch (error) {
+    console.error('✗ All CDNs failed:', error.message);
+  }
+}
+
+// Example 7: Check WASM availability
 async function checkWasm() {
-  console.log('\n=== Example 5: WASM Status ===\n');
+  console.log('\n=== Example 7: WASM Status ===\n');
 
   const usingWasm = await isUsingWasm();
 
   if (usingWasm) {
-    console.log('✓ Using WASM hasher (constant 2MB memory)');
+    console.log('✓ Using WASM hasher for streaming hash computation');
+    console.log('  Note: Use verifyFetchStream() for constant memory with large files.');
+    console.log('  Basic verifyFetch() still buffers the response for convenience.');
   } else {
-    console.log('⚠ Using SubtleCrypto fallback (buffers entire file)');
+    console.log('⚠ Using SubtleCrypto fallback');
     console.log('  For better performance with large files, ensure WASM is available.');
   }
 }
 
 // Run all examples
 async function main() {
-  console.log('╔═══════════════════════════════════════╗');
-  console.log('║   VerifyFetch Node.js Examples        ║');
-  console.log('╚═══════════════════════════════════════╝');
+  console.log('╔═══════════════════════════════════════════╗');
+  console.log('║   VerifyFetch Node.js Examples (v0.2.0)   ║');
+  console.log('╚═══════════════════════════════════════════╝');
 
   await checkWasm();
   await basicVerification();
   await manifestVerification();
   await computeHashes();
   await progressTracking();
+  await streamingVerification();
+  await multiCdnFailover();
 
-  console.log('\n✓ All examples completed!');
+  console.log('\n═══════════════════════════════════════════');
+  console.log('✓ All examples completed!');
+  console.log('\nv0.2.0 Features demonstrated:');
+  console.log('  • Streaming verification (constant memory)');
+  console.log('  • Multi-CDN failover');
+  console.log('  • Manifest v2 format');
+  console.log('\nNot shown here (browser-only):');
+  console.log('  • Service Worker mode (createVerifyWorker)');
+  console.log('  • Merkle tree verification (use CLI: npx verifyfetch sign --merkle)');
 }
 
 main().catch(console.error);

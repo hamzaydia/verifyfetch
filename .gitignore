@@ -43,7 +43,6 @@ temp/
 # Lock files (use pnpm)
 package-lock.json
 yarn.lock
-ROADMAP.md
 CLAUDE.md
 
 # Example build artifacts

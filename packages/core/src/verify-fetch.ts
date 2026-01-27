@@ -7,6 +7,8 @@
 
 import type {
   VerifyFetchOptions,
+  VerifyFetchStreamOptions,
+  VerifyFetchStreamResult,
   SRIString,
   OnFailBehavior,
   StreamingHasher,
@@ -158,6 +160,136 @@ export async function verifyFetch(
     statusText: response.statusText,
     headers: response.headers,
   });
+}
+
+/**
+ * Fetch and verify with streaming output
+ *
+ * Unlike verifyFetch() which buffers the entire file, this returns a
+ * ReadableStream that you can consume immediately while verification
+ * happens in parallel.
+ *
+ * @example
+ * ```ts
+ * import { verifyFetchStream } from 'verifyfetch';
+ *
+ * const { stream, verified } = await verifyFetchStream('/model.bin', {
+ *   sri: 'sha256-abc123...'
+ * });
+ *
+ * // Process chunks as they arrive
+ * for await (const chunk of stream) {
+ *   await uploadToGPU(chunk);  // Start processing immediately
+ * }
+ *
+ * // Wait for verification to complete
+ * await verified;  // Throws IntegrityError if failed
+ * ```
+ */
+export async function verifyFetchStream(
+  url: string | URL,
+  options: VerifyFetchStreamOptions
+): Promise<VerifyFetchStreamResult> {
+  showWelcomeOnce();
+
+  const {
+    sri,
+    onFail = 'block',
+    fetchImpl = fetch,
+    onProgress,
+  } = options;
+
+  // Validate SRI format
+  if (!validateSri(sri)) {
+    throw new Error(
+      `Invalid SRI format: "${sri}"\n` +
+      `Expected: sha256-BASE64, sha384-BASE64, or sha512-BASE64`
+    );
+  }
+
+  const urlString = url.toString();
+  const algorithm = parseAlgorithm(sri);
+
+  // Fetch the resource
+  const response = await fetchImpl(urlString);
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch ${urlString}: ${response.status} ${response.statusText}`
+    );
+  }
+
+  if (!response.body) {
+    throw new Error(
+      `Response body is null for ${urlString}.`
+    );
+  }
+
+  // Get total size for progress reporting
+  const contentLength = response.headers.get('content-length');
+  const totalBytes = contentLength ? parseInt(contentLength, 10) : undefined;
+
+  // Create streaming hasher
+  const hasher = await createHasher(algorithm);
+
+  // Track verification state
+  let verificationError: Error | null = null;
+  let resolveVerified: () => void;
+  let rejectVerified: (error: Error) => void;
+
+  const verified = new Promise<void>((resolve, reject) => {
+    resolveVerified = resolve;
+    rejectVerified = reject;
+  });
+
+  // Create a pass-through stream that hashes chunks
+  const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>({
+    transform(chunk, controller) {
+      hasher.update(chunk);
+
+      if (onProgress) {
+        onProgress(hasher.bytes_processed, totalBytes);
+      }
+
+      controller.enqueue(chunk);
+    },
+    async flush() {
+      // Verify the hash when stream completes
+      const actualSri = await hasher.finalize();
+
+      if (actualSri !== sri) {
+        verificationError = new IntegrityError(urlString, sri, actualSri);
+
+        if (onFail === 'block') {
+          rejectVerified(verificationError);
+        } else if (onFail === 'warn') {
+          console.warn(
+            `[VerifyFetch] Integrity mismatch for ${urlString}\n` +
+            `  Expected: ${sri}\n` +
+            `  Actual:   ${actualSri}\n` +
+            `  Continuing anyway (onFail: 'warn')`
+          );
+          resolveVerified();
+        } else {
+          // fallbackUrl not supported in streaming mode
+          rejectVerified(verificationError);
+        }
+      } else {
+        resolveVerified();
+      }
+    },
+  });
+
+  // Pipe the response through the hashing transform
+  response.body.pipeTo(writable).catch((error) => {
+    rejectVerified(error);
+  });
+
+  return {
+    stream: readable,
+    verified,
+    totalBytes,
+  };
 }
 
 /**

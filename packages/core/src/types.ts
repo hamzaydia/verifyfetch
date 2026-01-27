@@ -182,6 +182,122 @@ export interface StreamingHasher {
 }
 
 /**
+ * Result of verifyFetchStream()
+ * Provides a stream that can be consumed while verification happens in parallel
+ */
+export interface VerifyFetchStreamResult {
+  /**
+   * ReadableStream of verified chunks
+   * In non-Merkle mode: chunks are streamed but verification completes at the end
+   * In Merkle mode: each chunk is verified before being yielded
+   */
+  stream: ReadableStream<Uint8Array>;
+
+  /**
+   * Promise that resolves when verification completes successfully
+   * Rejects with IntegrityError if verification fails
+   * In non-Merkle mode: resolves after entire file is downloaded and verified
+   * In Merkle mode: resolves after all chunks are verified
+   */
+  verified: Promise<void>;
+
+  /**
+   * Total bytes (if known from Content-Length header)
+   */
+  totalBytes?: number;
+}
+
+/**
+ * Options for verifyFetchStream()
+ */
+export interface VerifyFetchStreamOptions extends VerifyFetchOptions {
+  /**
+   * Enable Merkle tree verification mode
+   * Requires manifest v2 with merkle data for the file
+   * Each chunk will be verified before being yielded to the consumer
+   */
+  merkle?: boolean;
+}
+
+/**
+ * Merkle tree information for chunked verification
+ */
+export interface MerkleInfo {
+  /**
+   * Merkle root hash (SRI format)
+   */
+  root: SRIString;
+
+  /**
+   * Size of each chunk in bytes
+   * @default 1048576 (1MB)
+   */
+  chunkSize: number;
+
+  /**
+   * Array of chunk hashes (SRI format)
+   * tree[0] is hash of chunk 0, tree[1] is hash of chunk 1, etc.
+   */
+  tree: SRIString[];
+}
+
+/**
+ * VF Manifest v2 format with Merkle tree support
+ */
+export interface VFManifestV2 {
+  /**
+   * Manifest version
+   */
+  version: 2;
+
+  /**
+   * Base path for artifact URLs
+   */
+  base: string;
+
+  /**
+   * Map of artifact paths to their integrity info
+   */
+  artifacts: Record<string, VFArtifactV2>;
+}
+
+/**
+ * Individual artifact entry in manifest v2
+ */
+export interface VFArtifactV2 {
+  /**
+   * SRI hash of the entire artifact (for backwards compatibility)
+   */
+  sri?: SRIString;
+
+  /**
+   * File size in bytes (required for Merkle mode)
+   */
+  size?: number;
+
+  /**
+   * Merkle tree information for chunked verification
+   */
+  merkle?: MerkleInfo;
+
+  /**
+   * URL to detached signature file (optional)
+   * @remarks Reserved for Ed25519 signature verification
+   */
+  signature?: string;
+
+  /**
+   * Issuer of the signature (optional)
+   */
+  issuer?: string;
+}
+
+/**
+ * Union type for all manifest versions
+ */
+export type VFManifestAny = VFManifest | VFManifestV2;
+
+/**
  * Verified fetcher instance returned by createVerifyFetcher()
  */
 export interface VerifiedFetcher {

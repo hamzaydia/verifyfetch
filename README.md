@@ -34,51 +34,181 @@ const response = await verifyFetch('/model.bin', {
 
 ---
 
-## Why?
+## Why VerifyFetch?
 
-`fetch()` has an integrity option, but it **buffers the entire file before verifying**. ([WHATWG spec requires "fully read"](https://github.com/whatwg/fetch/issues/1754))
+[CDN compromises happen.](https://sansec.io/research/polyfill-supply-chain-attack) When polyfill.io was compromised, 100M+ sites were affected.
 
-Try verifying a 4GB AI model and your browser crashes—it needs 4GB+ RAM just to check the hash. [CDN compromises happen.](https://sansec.io/research/polyfill-supply-chain-attack) You need integrity checks that actually work for large files.
+Native `fetch({ integrity })` exists, but VerifyFetch gives you:
 
-### The Problem with Native Solutions
+| Feature | Native `fetch` | VerifyFetch |
+|---------|---------------|-------------|
+| Basic SRI verification | Yes | Yes |
+| **Progress callbacks** | No | Yes |
+| **Streaming output** | No | Yes |
+| **Service Worker mode** | No | Yes |
+| **Merkle tree (fail-fast)** | No | Yes |
+| **Multi-CDN failover** | No | Yes |
+| **Manifest system** | No | Yes |
+| **CI/CD enforcement** | No | Yes |
 
-Both `fetch({ integrity })` and `crypto.subtle.digest()` load the **entire file into memory** before hashing:
+---
 
-| File Size | Native | VerifyFetch |
-|-----------|--------|-------------|
-| 100 MB | ✅ Works | ✅ Works |
-| 1 GB | ⚠️ Slow, RAM spike | ✅ 2MB memory |
-| **4 GB AI model** | ❌ **Browser crash** | ✅ **2MB memory** |
+## Quick Start
 
-VerifyFetch uses WASM streaming—constant memory for **any** file size.
+### Option 1: Direct Usage
+
+```typescript
+import { verifyFetch } from 'verifyfetch';
+
+const response = await verifyFetch('/engine.wasm', {
+  sri: 'sha256-uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek='
+});
+```
+
+### Option 2: Service Worker Mode (Zero-Code)
+
+Add verification to **every fetch** without changing your app code:
+
+```typescript
+// sw.js (your Service Worker)
+import { createVerifyWorker } from 'verifyfetch/worker';
+
+createVerifyWorker({
+  manifestUrl: '/vf.manifest.json',
+  include: ['*.wasm', '*.bin', '*.onnx', '*.safetensors'],
+  onFail: 'block'
+});
+```
+
+```typescript
+// app.js - No changes needed!
+const model = await fetch('/model.bin');  // Automatically verified!
+```
+
+### Option 3: Manifest Mode
+
+```typescript
+import { createVerifyFetcher } from 'verifyfetch';
+
+const vf = await createVerifyFetcher({
+  manifestUrl: '/vf.manifest.json'
+});
+
+const wasm = await vf.arrayBuffer('/engine.wasm');  // Hash looked up automatically
+```
 
 ---
 
 ## Generate Hashes
 
 ```bash
-# Generate hashes for your files
+# Generate SHA-256 hashes
 npx verifyfetch sign ./public/*.wasm ./models/*.bin
 
-# Output: vf.manifest.json with all SRI hashes
-```
+# With Merkle tree (for large files - enables fail-fast verification)
+npx verifyfetch sign --merkle --chunk-size 1048576 ./large-model.bin
 
-## Use in CI
-
-```bash
-# Fails if files changed after signing
-npx verifyfetch enforce --manifest ./public/vf.manifest.json
+# Output: vf.manifest.json
 ```
 
 ---
 
 ## Features
 
-<table>
-<tr>
-<td width="50%">
+### Streaming Verification
 
-**Fallback URLs**
+For large files, process chunks as they download:
+
+```typescript
+import { verifyFetchStream } from 'verifyfetch';
+
+const { stream, verified } = await verifyFetchStream('/model.bin', {
+  sri: 'sha256-...'
+});
+
+// Process chunks immediately - constant memory usage
+for await (const chunk of stream) {
+  await uploadToGPU(chunk);
+}
+
+// Verification completes after stream ends
+await verified;  // Throws IntegrityError if hash doesn't match
+```
+
+### Merkle Tree Verification (Fail-Fast)
+
+Stop downloading immediately if corruption is detected:
+
+```typescript
+import { createMerkleVerifier, verifyFetchStream } from 'verifyfetch';
+
+// Generate manifest with Merkle tree
+// npx verifyfetch sign --merkle ./large-model.bin
+
+// Verify chunk-by-chunk
+const verifier = createMerkleVerifier(manifest.artifacts['/model.bin'].merkle);
+
+const { stream } = await verifyFetchStream('/model.bin', { sri: merkle.root });
+
+for await (const chunk of stream) {
+  const result = await verifier.verifyNextChunk(chunk);
+
+  if (!result.valid) {
+    // Don't download 4GB if byte 0 is wrong!
+    throw new Error(`Chunk ${result.index} corrupt - stopping immediately`);
+  }
+
+  await processChunk(chunk);
+}
+```
+
+### Multi-CDN Failover
+
+Automatically try backup sources if one fails:
+
+```typescript
+import { verifyFetchFromSources } from 'verifyfetch';
+
+const response = await verifyFetchFromSources(
+  'sha256-abc123...',
+  '/model.bin',
+  {
+    sources: [
+      'https://cdn1.example.com',
+      'https://cdn2.example.com',
+      'https://backup.example.com'
+    ],
+    strategy: 'race'  // 'sequential' | 'race' | 'fastest'
+  }
+);
+```
+
+Or use content-addressable URLs:
+
+```typescript
+import { resolveContentAddressable } from 'verifyfetch';
+
+// The hash IS the URL - fetch from any source
+const response = await resolveContentAddressable(
+  'vf://sha256/uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=/model.bin',
+  ['https://cdn1.example.com', 'https://cdn2.example.com']
+);
+```
+
+### Progress Tracking
+
+```typescript
+await verifyFetch('/large-model.bin', {
+  sri: 'sha256-...',
+  onProgress: (bytes, total) => {
+    const percent = total ? Math.round(bytes / total * 100) : 0;
+    console.log(`Downloading: ${percent}%`);
+  }
+});
+```
+
+### Fallback URLs
+
 ```typescript
 await verifyFetch('/main.wasm', {
   sri: 'sha256-...',
@@ -86,63 +216,78 @@ await verifyFetch('/main.wasm', {
 });
 ```
 
-</td>
-<td width="50%">
+---
 
-**Progress Tracking**
-```typescript
-await verifyFetch('/large-model.bin', {
-  sri: 'sha256-...',
-  onProgress: (bytes, total) => {
-    console.log(`${bytes}/${total}`);
-  }
-});
+## CLI Commands
+
+```bash
+# Generate SRI hashes
+npx verifyfetch sign <files...>
+
+# Generate with Merkle tree (for large files)
+npx verifyfetch sign --merkle --chunk-size 1048576 <files...>
+
+# Verify files match manifest (for CI)
+npx verifyfetch enforce --manifest ./vf.manifest.json
+
+# Add to Next.js project
+npx verifyfetch init --next
 ```
-
-</td>
-</tr>
-<tr>
-<td>
-
-**Manifest Mode**
-```typescript
-const vf = await createVerifyFetcher({
-  manifestUrl: '/vf.manifest.json'
-});
-
-await vf.arrayBuffer('/model.bin');
-// Hash looked up automatically
-```
-
-</td>
-<td>
-
-**Works Everywhere**
-```typescript
-// Browser, Node, Deno, Bun, Workers
-// Same API. Same protection.
-await verifyFetch(url, { sri });
-```
-
-</td>
-</tr>
-</table>
 
 ---
 
-## Full API Reference
+## API Reference
 
 ### `verifyFetch(url, options)`
 
+Basic verified fetch.
+
 ```typescript
 const response = await verifyFetch('/file.bin', {
-  sri: 'sha256-...',              // Required
+  sri: 'sha256-...',              // Required: SRI hash
   onFail: 'block',                // 'block' | 'warn' | { fallbackUrl }
-  onProgress: (bytes, total) => {}
+  onProgress: (bytes, total) => {},
+  fetchImpl: fetch                // Custom fetch implementation
 });
 ```
 
+### `verifyFetchStream(url, options)`
+
+Streaming verification with constant memory.
+
+```typescript
+const { stream, verified, totalBytes } = await verifyFetchStream('/file.bin', {
+  sri: 'sha256-...',
+  onProgress: (bytes, total) => {}
+});
+
+for await (const chunk of stream) {
+  // Process immediately
+}
+
+await verified;  // Throws if verification fails
+```
+
+### `verifyFetchFromSources(sri, path, options)`
+
+Multi-CDN failover.
+
+```typescript
+const response = await verifyFetchFromSources(
+  'sha256-...',
+  '/file.bin',
+  {
+    sources: ['https://cdn1.com', 'https://cdn2.com'],
+    strategy: 'sequential',       // 'sequential' | 'race' | 'fastest'
+    timeout: 30000,
+    onSourceError: (source, error) => {}
+  }
+);
+```
+
 ### `createVerifyFetcher(options)`
+
+Manifest-aware fetcher.
 
 ```typescript
 const vf = await createVerifyFetcher({
@@ -155,22 +300,88 @@ await vf.json('/config.json');
 await vf.text('/data.txt');
 ```
 
-### CLI Commands
+### `createVerifyWorker(options)` (Service Worker)
 
-```bash
-verifyfetch sign <files...>     # Generate SRI hashes
-verifyfetch enforce             # Verify in CI
-verifyfetch init --next         # Add to Next.js project
+Zero-code verification via Service Worker.
+
+```typescript
+// In sw.js
+import { createVerifyWorker } from 'verifyfetch/worker';
+
+createVerifyWorker({
+  manifestUrl: '/vf.manifest.json',
+  include: ['*.wasm', '*.bin', '*.onnx'],
+  exclude: ['*.json'],
+  onFail: 'block',                // 'block' | 'warn' | 'passthrough'
+  cacheVerified: true,
+  cacheName: 'verifyfetch-verified',
+  debug: false
+});
 ```
 
-### Manifest Format
+### `registerVerifyWorker(swUrl)` (Client-Side)
+
+Register the Service Worker from your app.
+
+```typescript
+// In your app entry point
+import { registerVerifyWorker } from 'verifyfetch/worker';
+
+await registerVerifyWorker('/sw.js');
+// All matching fetches now automatically verified!
+```
+
+### Merkle Tree Functions
+
+```typescript
+import { generateMerkleTree, createMerkleVerifier, verifyChunk } from 'verifyfetch';
+
+// Generate Merkle tree from data
+const merkle = await generateMerkleTree(data, 1048576); // 1MB chunks
+// { root: 'sha256-...', chunkSize: 1048576, tree: ['sha256-...', ...] }
+
+// Create verifier for streaming
+const verifier = createMerkleVerifier(merkle);
+const result = await verifier.verifyNextChunk(chunk);
+// { valid: boolean, index: number }
+
+// Verify single chunk
+const isValid = await verifyChunk(chunk, 'sha256-...');
+```
+
+---
+
+## Manifest Format
+
+### v1 (Simple)
 
 ```json
 {
   "version": 1,
   "base": "/",
   "artifacts": {
-    "/engine.wasm": { "sri": "sha256-..." }
+    "/engine.wasm": {
+      "sri": "sha256-uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek="
+    }
+  }
+}
+```
+
+### v2 (With Merkle Tree)
+
+```json
+{
+  "version": 2,
+  "base": "/",
+  "artifacts": {
+    "/large-model.bin": {
+      "sri": "sha256-rootHash...",
+      "merkle": {
+        "root": "sha256-rootHash...",
+        "chunkSize": 1048576,
+        "tree": ["sha256-chunk0...", "sha256-chunk1...", "..."]
+      }
+    }
   }
 }
 ```
@@ -192,51 +403,54 @@ See [`examples/`](./examples) for working code:
 
 ### IntegrityError: Hash mismatch
 
-**Cause:** The file content doesn't match the expected SRI hash.
+**Cause:** File content doesn't match expected SRI hash.
 
 **Solutions:**
-1. **File changed legitimately** - Regenerate the hash:
+1. **File changed legitimately** — Regenerate:
    ```bash
    npx verifyfetch sign ./path/to/file.bin
    ```
-2. **CDN serving stale cache** - Clear CDN cache or use versioned URLs
-3. **Potential attack** - Investigate the source immediately
+2. **CDN serving stale cache** — Clear CDN cache or use versioned URLs
+3. **Potential attack** — Investigate immediately
 
-### WASM not loading / SubtleCrypto fallback
+### WASM not loading
 
-**Symptoms:** Console shows "Using SubtleCrypto fallback" or memory warning for large files.
+**Symptoms:** Console shows "Using SubtleCrypto fallback"
 
 **Solutions:**
-1. Ensure WASM files are served with correct MIME type (`application/wasm`)
-2. Check CSP headers allow `wasm-eval` if using strict CSP
-3. For large files (>50MB), SubtleCrypto fallback buffers the entire file—ensure WASM works for best performance
+1. Serve WASM with correct MIME type (`application/wasm`)
+2. Check CSP headers allow `wasm-eval`
 
-**Check WASM status:**
+**Check status:**
 ```typescript
 import { isUsingWasm } from 'verifyfetch';
 
 if (!await isUsingWasm()) {
-  console.warn('WASM not available, using SubtleCrypto fallback');
+  console.warn('WASM not available');
 }
 ```
 
-### Network errors
-
-**"Response body is null"** - The fetch completed but returned no body. This can happen with:
-- HEAD requests (use GET instead)
-- Some proxy configurations
-
-**"Failed to fetch"** - Network request failed. Check:
-- CORS configuration on the server
-- Network connectivity
-- URL is correct
-
 ### Memory issues with large files
 
-VerifyFetch uses constant ~2MB memory **when WASM is available**. If you see memory spikes:
+Use streaming instead of buffered:
 
-1. Check if WASM is loading (see above)
-2. SubtleCrypto fallback buffers the entire file—expected behavior, but not ideal for multi-GB files
+```typescript
+// Instead of verifyFetch (buffers entire file)
+const { stream, verified } = await verifyFetchStream('/large.bin', {
+  sri: 'sha256-...'
+});
+
+for await (const chunk of stream) {
+  // Process incrementally
+}
+await verified;
+```
+
+### Service Worker not intercepting
+
+1. Ensure manifest URL is accessible
+2. Check `include` patterns match your files
+3. Enable `debug: true` for logging
 
 </details>
 
@@ -275,7 +489,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 ---
 
 <p align="center">
-  If this helps protect your app, consider giving it a ⭐
+  If this helps protect your app, consider giving it a <a href="https://github.com/hamzaydia/verifyfetch">star</a>
 </p>
 
 <p align="center">

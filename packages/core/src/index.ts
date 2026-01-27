@@ -25,8 +25,8 @@
  * ```
  */
 
-// Core function
-export { verifyFetch, verifyStream, computeSri } from './verify-fetch.js';
+// Core functions
+export { verifyFetch, verifyFetchStream, verifyStream, computeSri } from './verify-fetch.js';
 
 // Manifest-aware fetcher
 export {
@@ -39,16 +39,35 @@ export {
 // WASM loader utilities
 export { initWasm, createHasher, hash, validateSri, isUsingWasm } from './wasm-loader.js';
 
+// Merkle tree utilities
+export {
+  generateMerkleTree,
+  verifyChunk,
+  createMerkleVerifier,
+  DEFAULT_CHUNK_SIZE,
+} from './merkle.js';
+export type { MerkleVerifier, ChunkVerificationResult } from './merkle.js';
+
 // Types
 export type {
   // Options
   VerifyFetchOptions,
+  VerifyFetchStreamOptions,
   VerifyFetcherOptions,
   OnFailBehavior,
 
-  // Manifest types
+  // Streaming types
+  VerifyFetchStreamResult,
+
+  // Manifest types (v1)
   VFManifest,
   VFArtifact,
+
+  // Manifest types (v2 with Merkle support)
+  VFManifestV2,
+  VFArtifactV2,
+  VFManifestAny,
+  MerkleInfo,
 
   // Utility types
   HashAlgorithm,
@@ -56,6 +75,15 @@ export type {
   StreamingHasher,
   VerifiedFetcher,
 } from './types.js';
+
+// Content-Addressable URLs with multi-CDN failover
+export {
+  parseContentAddressableUrl,
+  createContentAddressableUrl,
+  verifyFetchFromSources,
+  resolveContentAddressable,
+} from './content-addressable.js';
+export type { MultiSourceOptions } from './content-addressable.js';
 
 // Errors
 export { IntegrityError, SignatureError } from './types.js';

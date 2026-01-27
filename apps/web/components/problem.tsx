@@ -10,31 +10,31 @@ export function Problem() {
   const isInView = useInView(ref, { once: true, margin: '-100px' });
 
   return (
-    <section ref={ref} className="py-24 px-6 bg-zinc-950/50">
+    <section ref={ref} className="py-12 sm:py-16 md:py-24 px-4 sm:px-6 bg-zinc-950/50">
       <div className="max-w-4xl mx-auto">
         <motion.div
           initial={{ y: 40, opacity: 0 }}
           animate={isInView ? { y: 0, opacity: 1 } : {}}
           transition={{ duration: 0.6 }}
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-6">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-4 sm:mb-6">
             Why VerifyFetch?
           </h2>
 
-          <div className="glass rounded-2xl p-8 md:p-12 mb-8">
-            <div className="flex items-start gap-4 mb-6">
-              <div className="p-3 rounded-lg bg-amber-500/10 text-amber-500">
-                <AlertTriangle className="w-6 h-6" />
+          <div className="glass rounded-2xl p-4 sm:p-6 md:p-8 lg:p-12 mb-6 sm:mb-8">
+            <div className="flex items-start gap-3 sm:gap-4 mb-4 sm:mb-6">
+              <div className="p-2 sm:p-3 rounded-lg bg-amber-500/10 text-amber-500">
+                <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <div>
-                <p className="text-xl text-zinc-200 mb-2">
+                <p className="text-base sm:text-lg md:text-xl text-zinc-200 mb-2">
                   <code className="text-primary bg-primary/10 px-2 py-0.5 rounded">
                     fetch()
                   </code>{' '}
                   has integrity, but it{' '}
                   <strong>buffers the entire file</strong> first.
                 </p>
-                <p className="text-lg text-zinc-400">
+                <p className="text-sm sm:text-base md:text-lg text-zinc-400">
                   A 4GB AI model needs 4GB+ RAM just to verify the hash.
                 </p>
               </div>
@@ -60,7 +60,7 @@ export function Problem() {
           </div>
 
           {/* Timeline of Attacks */}
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
             {[
               {
                 year: '2024',

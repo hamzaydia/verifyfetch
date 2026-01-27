@@ -191,8 +191,7 @@ export default function GeneratePage() {
 
   const getManifestJSON = () => {
     return JSON.stringify({
-      version: 1,
-      base: '/',
+      version: 2,
       artifacts: Object.fromEntries(
         manifestEntries.map((e) => [e.path, { sri: e.sri }])
       ),
@@ -214,9 +213,15 @@ export default function GeneratePage() {
     : (url ? new URL(url).pathname.split('/').pop() || 'resource' : 'resource');
 
   const verifyFetchCode = hash
-    ? `import { verifyFetch } from 'verifyfetch';
+    ? `import { verifyFetch, verifyFetchStream } from 'verifyfetch';
 
+// Basic verification
 const response = await verifyFetch('${inputMode === 'url' ? url : '/' + resourceName}', {
+  sri: '${hash}'
+});
+
+// Or stream large files with constant memory
+const { stream, verified } = await verifyFetchStream('${inputMode === 'url' ? url : '/' + resourceName}', {
   sri: '${hash}'
 });`
     : '';
@@ -428,7 +433,7 @@ const response = await verifyFetch('${inputMode === 'url' ? url : '/' + resource
                 <div className="flex items-center justify-between p-4 bg-primary/5 border border-primary/20 rounded-lg">
                   <div>
                     <p className="text-sm font-medium text-zinc-200">Ready to add runtime verification?</p>
-                    <p className="text-xs text-zinc-500 mt-0.5">Streaming verification with constant 2MB memory</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">Streaming, Merkle trees, Service Worker, Multi-CDN failover</p>
                   </div>
                   <code className="text-sm text-primary font-mono">npm i verifyfetch</code>
                 </div>
@@ -452,7 +457,7 @@ const response = await verifyFetch('${inputMode === 'url' ? url : '/' + resource
               Build a <code className="text-primary">vf.manifest.json</code> to verify multiple files automatically.
             </p>
             <p className="text-zinc-500 text-xs mb-6">
-              Place this file at your site root and VerifyFetch will auto-verify matching paths.
+              Works with Manifest Mode or Service Worker. For Merkle tree support (fail-fast on large files), use the CLI.
             </p>
 
             {/* Algorithm Selection for Manifest */}
@@ -581,15 +586,27 @@ const response = await verifyFetch('${inputMode === 'url' ? url : '/' + resource
                   </button>
                 </div>
 
-                {/* Usage hint */}
-                <div className="mt-4 p-3 bg-zinc-800/50 rounded-lg">
-                  <p className="text-xs text-zinc-500 mb-2">
-                    <span className="text-zinc-400">Usage:</span>
-                  </p>
-                  <pre className="text-xs text-zinc-400 font-mono overflow-x-auto">{`const vf = await createVerifyFetcher({
+                {/* Usage hints */}
+                <div className="mt-4 space-y-3">
+                  <div className="p-3 bg-zinc-800/50 rounded-lg">
+                    <p className="text-xs text-zinc-400 mb-2 font-medium">Option 1: Manifest Mode</p>
+                    <pre className="text-xs text-zinc-500 font-mono overflow-x-auto">{`const vf = await createVerifyFetcher({
   manifestUrl: '/vf.manifest.json'
 });
 const data = await vf.arrayBuffer('/file.wasm');`}</pre>
+                  </div>
+                  <div className="p-3 bg-zinc-800/50 rounded-lg">
+                    <p className="text-xs text-zinc-400 mb-2 font-medium">Option 2: Service Worker (Zero Code)</p>
+                    <pre className="text-xs text-zinc-500 font-mono overflow-x-auto">{`// sw.js - setup once
+import { createVerifyWorker } from 'verifyfetch/worker';
+createVerifyWorker({ manifestUrl: '/vf.manifest.json' });
+
+// app.js - no changes needed!
+const data = await fetch('/file.wasm'); // auto-verified`}</pre>
+                  </div>
+                  <p className="text-xs text-zinc-600">
+                    For large files, use CLI for Merkle tree support: <code className="text-zinc-500">npx verifyfetch sign --merkle ./file.bin</code>
+                  </p>
                 </div>
               </>
             ) : (
