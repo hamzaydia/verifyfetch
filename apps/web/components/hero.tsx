@@ -40,9 +40,9 @@ export function Hero() {
           transition={{ delay: 0.2 }}
           className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold mb-4 sm:mb-6 leading-tight"
         >
-          Verify any file you fetch
+          Download large files.
           <br />
-          <span className="gradient-text">—before you trust it.</span>
+          <span className="gradient-text">Verify. Resume.</span>
         </motion.h1>
 
         {/* Tagline */}
@@ -52,9 +52,9 @@ export function Hero() {
           transition={{ delay: 0.3 }}
           className="text-base sm:text-lg md:text-xl text-zinc-400 mb-6 sm:mb-8 md:mb-10 max-w-2xl mx-auto"
         >
-          Streaming integrity verification for WASM, AI models, and large files.
+          4GB AI model, network drops at 3.8GB? Resume from 3.8GB, not zero.
           <br />
-          <span className="text-zinc-500">Fail-fast Merkle trees. Zero-code Service Worker. Multi-CDN failover.</span>
+          <span className="text-zinc-500">2MB memory for any file size. Detect corruption instantly. Multi-CDN failover.</span>
         </motion.p>
 
         {/* Install Command */}

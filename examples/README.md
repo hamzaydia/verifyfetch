@@ -45,7 +45,7 @@ npm run dev
 - Progress tracking
 - WASM availability checking
 
-**v0.2.0 Features:**
+**Streaming & Multi-CDN:**
 - Streaming verification with `verifyFetchStream()` (constant memory)
 - Multi-CDN failover with `verifyFetchFromSources()`
 
@@ -65,7 +65,7 @@ npm run dev
 
 ---
 
-## v0.2.0 Features Quick Reference
+## Features Quick Reference
 
 ### 1. Basic Verification
 
@@ -151,13 +151,13 @@ const model = await vf.arrayBuffer('/model.bin');
 const config = await vf.json('/config.json');
 ```
 
-### 6. Merkle Tree (Fail-Fast)
+### 6. Chunked Verification (Fail-Fast)
 
-Generate Merkle manifests for large files to detect corruption early:
+Generate chunked manifests for large files to detect corruption early:
 
 ```bash
-# Generate with Merkle tree
-npx verifyfetch sign --merkle ./large-model.bin
+# Generate with chunked hashes
+npx verifyfetch sign --chunked ./large-model.bin
 
 # Output includes chunk hashes for fail-fast verification
 ```

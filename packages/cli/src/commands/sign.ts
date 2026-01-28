@@ -5,7 +5,7 @@
 // Usage:
 //   npx verifyfetch sign "./public/**/*.wasm" "./public/models/**/*.bin"
 //   npx verifyfetch sign ./public/engine.wasm --out ./public/vf.manifest.json
-//   npx verifyfetch sign ./public/model.bin --merkle  # Chunked verification
+//   npx verifyfetch sign ./public/model.bin --chunked  # Chunked verification
 
 import { Command } from 'commander';
 import chalk from 'chalk';
@@ -14,9 +14,9 @@ import { glob } from 'glob';
 import { createHash } from 'crypto';
 import { readFile, writeFile, stat } from 'fs/promises';
 import { resolve, relative, dirname, basename } from 'path';
-import type { VFManifest, VFManifestV2, VFArtifact, VFArtifactV2, SRIString, MerkleInfo } from 'verifyfetch';
+import type { VFManifest, VFManifestV2, VFArtifact, VFArtifactV2, SRIString, ChunkedInfo } from 'verifyfetch';
 
-// Default chunk size for Merkle tree: 1MB
+// Default chunk size: 1MB
 const DEFAULT_CHUNK_SIZE = 1024 * 1024;
 
 interface SignOptions {
@@ -24,7 +24,7 @@ interface SignOptions {
   base: string;
   algorithm: 'sha256' | 'sha384' | 'sha512';
   update: boolean;
-  merkle: boolean;
+  chunked: boolean;
   chunkSize: number;
 }
 
@@ -35,8 +35,8 @@ export const signCommand = new Command('sign')
   .option('-b, --base <path>', 'Base path for URLs in manifest', '/')
   .option('-a, --algorithm <alg>', 'Hash algorithm (sha256, sha384, sha512)', 'sha256')
   .option('-u, --update', 'Update existing manifest instead of replacing', false)
-  .option('-m, --merkle', 'Generate Merkle tree for chunked verification (v2 manifest)', false)
-  .option('--chunk-size <bytes>', 'Chunk size for Merkle tree in bytes', String(DEFAULT_CHUNK_SIZE))
+  .option('-c, --chunked', 'Generate per-chunk hashes for fail-fast verification (v2 manifest)', false)
+  .option('--chunk-size <bytes>', 'Chunk size in bytes (default: 1MB)', String(DEFAULT_CHUNK_SIZE))
   .action(async (patterns: string[], options: SignOptions) => {
     // Parse chunk size
     options.chunkSize = parseInt(String(options.chunkSize), 10) || DEFAULT_CHUNK_SIZE;
@@ -73,7 +73,7 @@ export const signCommand = new Command('sign')
       // Load existing manifest if updating
       let manifest: VFManifest | VFManifestV2;
       const outPath = resolve(options.out);
-      const useV2 = options.merkle;
+      const useV2 = options.chunked;
 
       if (options.update) {
         try {
@@ -90,12 +90,12 @@ export const signCommand = new Command('sign')
 
       // Process each file
       const cwd = process.cwd();
-      const results: Array<{ path: string; sri: SRIString; size: number; merkle?: MerkleInfo }> = [];
+      const results: Array<{ path: string; sri: SRIString; size: number; chunked?: ChunkedInfo }> = [];
 
       for (const filePath of uniqueFiles) {
         const relativePath = relative(cwd, filePath);
-        spinner.text = options.merkle
-          ? `Generating Merkle tree for ${relativePath}...`
+        spinner.text = options.chunked
+          ? `Generating chunk hashes for ${relativePath}...`
           : `Hashing ${relativePath}...`;
 
         const content = await readFile(filePath);
@@ -116,21 +116,21 @@ export const signCommand = new Command('sign')
           }
         }
 
-        if (options.merkle) {
-          // Generate Merkle tree
-          const merkle = generateMerkleTree(content, options.chunkSize, options.algorithm);
+        if (options.chunked) {
+          // Generate chunk hashes
+          const chunked = generateChunkedHashes(content, options.chunkSize, options.algorithm);
 
           (manifest as VFManifestV2).artifacts[manifestPath] = {
             sri,
             size: fileStats.size,
-            merkle,
+            chunked,
           };
 
           results.push({
             path: manifestPath,
             sri,
             size: fileStats.size,
-            merkle,
+            chunked,
           });
         } else {
           manifest.artifacts[manifestPath] = {
@@ -149,21 +149,21 @@ export const signCommand = new Command('sign')
       spinner.text = 'Writing manifest...';
       await writeFile(outPath, JSON.stringify(manifest, null, 2) + '\n');
 
-      const modeStr = options.merkle ? ' with Merkle trees' : '';
+      const modeStr = options.chunked ? ' with chunked verification' : '';
       spinner.succeed(chalk.green(`Signed ${results.length} file(s)${modeStr}`));
 
       // Show results
       console.log('\n' + chalk.dim('Generated hashes:'));
       for (const result of results) {
         const sizeStr = formatSize(result.size);
-        if (result.merkle) {
-          const chunkCount = result.merkle.tree.length;
-          const chunkSizeStr = formatSize(result.merkle.chunkSize);
+        if (result.chunked) {
+          const chunkCount = result.chunked.hashes.length;
+          const chunkSizeStr = formatSize(result.chunked.chunkSize);
           console.log(
             `  ${chalk.cyan(result.path)} ${chalk.dim(`(${sizeStr})`)}\n` +
             `    ${chalk.dim('SRI:')} ${chalk.dim(result.sri)}\n` +
-            `    ${chalk.dim('Merkle:')} ${chalk.yellow(chunkCount + ' chunks')} ${chalk.dim(`(${chunkSizeStr} each)`)}\n` +
-            `    ${chalk.dim('Root:')} ${chalk.dim(result.merkle.root)}`
+            `    ${chalk.dim('Chunks:')} ${chalk.yellow(chunkCount + ' chunks')} ${chalk.dim(`(${chunkSizeStr} each)`)}\n` +
+            `    ${chalk.dim('Root:')} ${chalk.dim(result.chunked.root)}`
           );
         } else {
           console.log(
@@ -180,14 +180,14 @@ export const signCommand = new Command('sign')
       console.log(`  1. Commit the manifest: ${chalk.cyan('git add ' + relative(cwd, outPath))}`);
       console.log(`  2. Use in your code:`);
 
-      if (options.merkle) {
+      if (options.chunked) {
         console.log(chalk.dim(`
      import { verifyFetchStream, createVerifyFetcher } from 'verifyfetch';
 
      // Option 1: Stream with chunk-by-chunk verification
      const { stream, verified } = await verifyFetchStream('${results[0]?.path || '/your-file.bin'}', {
        sri: '${results[0]?.sri || 'sha256-...'}',
-       merkle: true
+       chunked: true
      });
 
      for await (const chunk of stream) {
@@ -230,29 +230,29 @@ function createEmptyManifest(base: string, v2: boolean = false): VFManifest | VF
   };
 }
 
-function generateMerkleTree(
+function generateChunkedHashes(
   content: Buffer,
   chunkSize: number,
   algorithm: string
-): MerkleInfo {
+): ChunkedInfo {
   const chunks = splitIntoChunks(content, chunkSize);
-  const tree: SRIString[] = [];
+  const hashes: SRIString[] = [];
 
   // Hash each chunk
   for (const chunk of chunks) {
     const hash = createHash(algorithm).update(chunk).digest('base64');
-    tree.push(`${algorithm}-${hash}` as SRIString);
+    hashes.push(`${algorithm}-${hash}` as SRIString);
   }
 
-  // Compute Merkle root (simple concatenation + hash)
-  const concatenated = tree.join('');
+  // Compute root hash (simple concatenation + hash, NOT a true Merkle tree)
+  const concatenated = hashes.join('');
   const rootHash = createHash(algorithm).update(concatenated).digest('base64');
   const root = `${algorithm}-${rootHash}` as SRIString;
 
   return {
     root,
     chunkSize,
-    tree,
+    hashes,
   };
 }
 

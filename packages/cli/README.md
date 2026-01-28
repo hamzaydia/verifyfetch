@@ -38,6 +38,8 @@ npx @verifyfetch/cli sign <files...> [options]
 | `-a, --algorithm <alg>` | Hash algorithm: `sha256`, `sha384`, `sha512` (default: `sha256`) |
 | `-b, --base <path>` | Base path for URLs (default: `/`) |
 | `-u, --update` | Update existing manifest instead of replacing |
+| `-c, --chunked` | Generate per-chunk hashes (for resumable downloads) |
+| `--chunk-size <bytes>` | Chunk size in bytes (default: 1MB) |
 
 **Examples:**
 
@@ -50,6 +52,9 @@ npx @verifyfetch/cli sign ./dist/*.js -o ./public/manifest.json
 
 # Use SHA-384
 npx @verifyfetch/cli sign ./models/* -a sha384
+
+# For large files: enable resumable downloads
+npx @verifyfetch/cli sign --chunked ./large-model.bin
 ```
 
 ### `enforce` — Verify in CI/CD
@@ -87,17 +92,33 @@ npx @verifyfetch/cli init [options]
 
 ## Manifest Format
 
+**v1 (simple):**
 ```json
 {
   "version": 1,
-  "algorithm": "sha256",
   "base": "/",
   "artifacts": {
     "/app.wasm": {
       "sri": "sha256-uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek="
-    },
-    "/model.bin": {
-      "sri": "sha256-MV9b23bQeMQ7isAGTkoBZGErH853yGk0W/yUx1iU7dM="
+    }
+  }
+}
+```
+
+**v2 (with `--chunked` for resumable downloads):**
+```json
+{
+  "version": 2,
+  "base": "/",
+  "artifacts": {
+    "/large-model.bin": {
+      "sri": "sha256-fullFileHash...",
+      "size": 4294967296,
+      "chunked": {
+        "root": "sha256-rootHash...",
+        "chunkSize": 1048576,
+        "hashes": ["sha256-chunk0...", "sha256-chunk1...", "..."]
+      }
     }
   }
 }

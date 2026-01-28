@@ -18,42 +18,42 @@ const features = [
   {
     icon: Shield,
     title: 'Service Worker Mode',
-    description: 'Zero-code integration. Verify every fetch automatically without changing your app.',
+    description: 'Add one file, verify all fetches. No changes to existing code needed.',
   },
   {
     icon: GitBranch,
-    title: 'Merkle Tree Verification',
-    description: 'Fail-fast chunked verification. Stop downloading if byte 0 is corrupt.',
+    title: 'Chunked Verification',
+    description: 'Detect corruption at chunk 5, stop immediately. Don\'t download 3995 more chunks.',
   },
   {
     icon: Globe,
     title: 'Multi-CDN Failover',
-    description: 'Automatic failover across CDNs with race, sequential, or fastest strategies.',
+    description: 'Try CDN1, CDN2, CDN3. First verified response wins.',
   },
   {
     icon: Zap,
     title: 'Streaming Output',
-    description: 'Process chunks as they download. Constant memory for any file size.',
+    description: '2MB memory for a 4GB file. Process chunks as they arrive.',
   },
   {
     icon: RefreshCw,
-    title: 'Fallback URLs',
-    description: 'Auto-retry from backup servers on integrity failure.',
+    title: 'Resumable Downloads',
+    description: 'Network fails at 80%? Resume from 80%. Progress persists to IndexedDB.',
   },
   {
     icon: Activity,
     title: 'Progress Tracking',
-    description: 'Monitor large downloads with real-time progress callbacks.',
+    description: 'Bytes loaded, percent complete, ETA. All in one callback.',
   },
   {
     icon: FileJson,
     title: 'Manifest System',
-    description: 'Manage multiple files with JSON manifests. v2 supports Merkle trees.',
+    description: 'One JSON file for all your hashes. CLI generates it from your files.',
   },
   {
     icon: Terminal,
     title: 'CLI Tools',
-    description: 'Generate hashes, Merkle trees, and enforce integrity in CI/CD.',
+    description: 'npx verifyfetch sign *.wasm - done. Enforce in CI with one command.',
   },
 ];
 
@@ -70,10 +70,10 @@ export function Features() {
           transition={{ duration: 0.6 }}
         >
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-3 sm:mb-4">
-            Everything You Need
+            What You Get
           </h2>
           <p className="text-zinc-400 text-center text-sm sm:text-base mb-8 sm:mb-10 md:mb-12 max-w-2xl mx-auto">
-            Built for security-conscious developers who need to verify files at any scale.
+            Everything needed to download, verify, and resume large files in the browser.
           </p>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">

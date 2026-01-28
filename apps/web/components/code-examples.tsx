@@ -79,8 +79,8 @@ const response = await verifyFetchFromSources(
     code: `# Generate hashes for your files
 npx verifyfetch sign ./public/*.wasm ./models/*.bin
 
-# With Merkle tree (fail-fast for large files)
-npx verifyfetch sign --merkle ./large-model.bin
+# With chunked verification (fail-fast for large files)
+npx verifyfetch sign --chunked ./large-model.bin
 
 # Verify files match their hashes (for CI/CD)
 npx verifyfetch enforce --manifest ./vf.manifest.json`,
@@ -210,7 +210,7 @@ export function CodeExamples() {
           transition={{ duration: 0.6 }}
         >
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-3 sm:mb-4">
-            Simple API, Powerful Protection
+            Simple API, Real Protection
           </h2>
           <p className="text-zinc-400 text-center text-sm sm:text-base mb-8 sm:mb-10 md:mb-12 max-w-2xl mx-auto">
             Multiple ways to protect your assets. Choose what fits your needs.

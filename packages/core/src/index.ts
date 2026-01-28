@@ -39,14 +39,14 @@ export {
 // WASM loader utilities
 export { initWasm, createHasher, hash, validateSri, isUsingWasm } from './wasm-loader.js';
 
-// Merkle tree utilities
+// Chunked verification utilities
 export {
-  generateMerkleTree,
+  generateChunkedHashes,
   verifyChunk,
-  createMerkleVerifier,
+  createChunkedVerifier,
   DEFAULT_CHUNK_SIZE,
-} from './merkle.js';
-export type { MerkleVerifier, ChunkVerificationResult } from './merkle.js';
+} from './chunked.js';
+export type { ChunkedVerifier, ChunkVerificationResult } from './chunked.js';
 
 // Types
 export type {
@@ -63,11 +63,11 @@ export type {
   VFManifest,
   VFArtifact,
 
-  // Manifest types (v2 with Merkle support)
+  // Manifest types (v2 with chunked support)
   VFManifestV2,
   VFArtifactV2,
   VFManifestAny,
-  MerkleInfo,
+  ChunkedInfo,
 
   // Utility types
   HashAlgorithm,
@@ -84,6 +84,28 @@ export {
   resolveContentAddressable,
 } from './content-addressable.js';
 export type { MultiSourceOptions } from './content-addressable.js';
+
+// Resumable downloads
+export {
+  verifyFetchResumable,
+  canResume,
+  getDownloadProgress,
+  cancelDownload,
+  ChunkVerificationError,
+} from './resumable.js';
+export type {
+  ResumableFetchOptions,
+  ResumableFetchResult,
+  ResumableProgress,
+} from './resumable.js';
+
+// Storage utilities
+export {
+  isStorageAvailable,
+  clearOldDownloads,
+  getAllDownloads,
+} from './storage.js';
+export type { DownloadState } from './storage.js';
 
 // Errors
 export { IntegrityError, SignatureError } from './types.js';

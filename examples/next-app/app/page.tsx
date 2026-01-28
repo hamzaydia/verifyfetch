@@ -26,7 +26,7 @@ export default function Home() {
     }
   };
 
-  // Streaming fetch (v0.2.0)
+  // Streaming fetch (constant memory)
   const handleStreamFetch = async () => {
     setStreamResult('');
     let totalBytes = 0;
@@ -46,7 +46,7 @@ export default function Home() {
   return (
     <main style={{ padding: '2rem', fontFamily: 'system-ui, sans-serif', maxWidth: '800px', margin: '0 auto' }}>
       <h1>VerifyFetch Next.js Example</h1>
-      <p style={{ color: '#666' }}>v0.2.0 features: Streaming, Multi-CDN, Service Worker, Merkle Tree</p>
+      <p style={{ color: '#666' }}>v1.0.0 features: Streaming, Multi-CDN, Service Worker, Resumable Downloads</p>
 
       {/* Basic Fetch Demo */}
       <section style={{ marginTop: '2rem', padding: '1.5rem', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
@@ -81,7 +81,7 @@ export default function Home() {
 
       {/* Streaming Fetch Demo */}
       <section style={{ marginTop: '2rem', padding: '1.5rem', backgroundColor: '#f0fff0', borderRadius: '8px' }}>
-        <h2>2. Streaming Verification (v0.2.0)</h2>
+        <h2>2. Streaming Verification</h2>
         <p style={{ color: '#666', fontSize: '0.9rem' }}>
           Uses <code>verifyFetchStream()</code> - constant ~2MB memory, process chunks as they arrive
         </p>
@@ -128,9 +128,9 @@ export default function Home() {
         </ol>
       </section>
 
-      {/* v0.2.0 Features */}
+      {/* Key Features */}
       <section style={{ marginTop: '2rem' }}>
-        <h2>v0.2.0 Features</h2>
+        <h2>Key Features</h2>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ backgroundColor: '#f5f5f5' }}>
@@ -152,8 +152,8 @@ export default function Home() {
               <td style={{ padding: '0.75rem', borderBottom: '1px solid #eee' }}><code>createVerifyWorker()</code></td>
             </tr>
             <tr>
-              <td style={{ padding: '0.75rem', borderBottom: '1px solid #eee' }}>Merkle tree (fail-fast)</td>
-              <td style={{ padding: '0.75rem', borderBottom: '1px solid #eee' }}><code>npx verifyfetch sign --merkle</code></td>
+              <td style={{ padding: '0.75rem', borderBottom: '1px solid #eee' }}>Chunked verification (fail-fast)</td>
+              <td style={{ padding: '0.75rem', borderBottom: '1px solid #eee' }}><code>npx verifyfetch sign --chunked</code></td>
             </tr>
           </tbody>
         </table>

@@ -128,7 +128,7 @@
   </head>
   <body>
     <h1>VerifyFetch Vite Example</h1>
-    <p class="subtitle">v0.2.0 features: Streaming, Multi-CDN, Service Worker, Merkle Tree</p>
+    <p class="subtitle">v1.0.0 features: Streaming, Multi-CDN, Service Worker, Resumable Downloads</p>
 
     <!-- Basic Fetch -->
     <div class="card">
@@ -147,7 +147,7 @@
 
     <!-- Streaming Fetch -->
     <div class="card card-green">
-      <h2>2. Streaming Verification (v0.2.0)</h2>
+      <h2>2. Streaming Verification</h2>
       <p>Uses <code style="display:inline;padding:0.2rem 0.4rem;">verifyFetchStream()</code> - constant ~2MB memory</p>
 
       <button id="fetch-stream">Stream & Verify</button>
@@ -164,9 +164,9 @@
       </div>
     </div>
 
-    <!-- v0.2.0 Features -->
+    <!-- Key Features -->
     <div class="card">
-      <h2>v0.2.0 Features</h2>
+      <h2>Key Features</h2>
       <table class="feature-table">
         <thead>
           <tr>
@@ -192,8 +192,8 @@
             <td>Zero-code verification</td>
           </tr>
           <tr>
-            <td>Merkle Tree</td>
-            <td><code style="display:inline;padding:0.2rem 0.4rem;">npx verifyfetch sign --merkle</code></td>
+            <td>Chunked Verification</td>
+            <td><code style="display:inline;padding:0.2rem 0.4rem;">npx verifyfetch sign --chunked</code></td>
             <td>Fail-fast on corruption</td>
           </tr>
         </tbody>

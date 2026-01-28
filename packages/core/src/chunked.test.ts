@@ -1,5 +1,5 @@
 /**
- * Comprehensive Tests for Merkle Tree Chunked Verification
+ * Comprehensive Tests for Chunked Verification
  *
  * These tests ensure production-ready behavior with edge cases,
  * boundary conditions, and error scenarios.
@@ -7,23 +7,23 @@
 
 import { describe, it, expect } from 'vitest';
 import {
-  generateMerkleTree,
+  generateChunkedHashes,
   verifyChunk,
-  createMerkleVerifier,
+  createChunkedVerifier,
   DEFAULT_CHUNK_SIZE,
-} from './merkle.js';
-import type { SRIString, MerkleInfo } from './types.js';
+} from './chunked.js';
+import type { SRIString, ChunkedInfo } from './types.js';
 
-describe('Merkle Tree', () => {
-  describe('generateMerkleTree', () => {
-    it('should generate Merkle tree for small data', async () => {
+describe('Chunked Verification', () => {
+  describe('generateChunkedHashes', () => {
+    it('should generate chunk hashes for small data', async () => {
       const data = new TextEncoder().encode('Hello, World!');
-      const merkle = await generateMerkleTree(data);
+      const chunked = await generateChunkedHashes(data);
 
-      expect(merkle.root).toMatch(/^sha256-/);
-      expect(merkle.chunkSize).toBe(DEFAULT_CHUNK_SIZE);
-      expect(merkle.tree.length).toBe(1); // Single chunk for small data
-      expect(merkle.tree[0]).toMatch(/^sha256-/);
+      expect(chunked.root).toMatch(/^sha256-/);
+      expect(chunked.chunkSize).toBe(DEFAULT_CHUNK_SIZE);
+      expect(chunked.hashes.length).toBe(1); // Single chunk for small data
+      expect(chunked.hashes[0]).toMatch(/^sha256-/);
     });
 
     it('should generate multiple chunks for large data', async () => {
@@ -33,51 +33,51 @@ describe('Merkle Tree', () => {
         data[i] = i % 256;
       }
 
-      const merkle = await generateMerkleTree(data);
+      const chunked = await generateChunkedHashes(data);
 
-      expect(merkle.tree.length).toBe(3);
-      merkle.tree.forEach((hash) => {
+      expect(chunked.hashes.length).toBe(3);
+      chunked.hashes.forEach((hash) => {
         expect(hash).toMatch(/^sha256-/);
       });
     });
 
     it('should use custom chunk size', async () => {
       const data = new Uint8Array(1000); // 1000 bytes
-      const merkle = await generateMerkleTree(data, 300); // 300 byte chunks
+      const chunked = await generateChunkedHashes(data, 300); // 300 byte chunks
 
       // 1000 / 300 = 4 chunks (334 + 333 + 333 bytes)
-      expect(merkle.tree.length).toBe(4);
+      expect(chunked.hashes.length).toBe(4);
     });
 
     it('should use custom algorithm', async () => {
       const data = new TextEncoder().encode('test');
-      const merkle = await generateMerkleTree(data, DEFAULT_CHUNK_SIZE, 'sha384');
+      const chunked = await generateChunkedHashes(data, DEFAULT_CHUNK_SIZE, 'sha384');
 
-      expect(merkle.root).toMatch(/^sha384-/);
-      expect(merkle.tree[0]).toMatch(/^sha384-/);
+      expect(chunked.root).toMatch(/^sha384-/);
+      expect(chunked.hashes[0]).toMatch(/^sha384-/);
     });
   });
 
   describe('verifyChunk', () => {
     it('should return true for valid chunk', async () => {
       const data = new TextEncoder().encode('Hello, World!');
-      const merkle = await generateMerkleTree(data);
+      const chunked = await generateChunkedHashes(data);
 
-      const isValid = await verifyChunk(data, merkle.tree[0]);
+      const isValid = await verifyChunk(data, chunked.hashes[0]);
       expect(isValid).toBe(true);
     });
 
     it('should return false for invalid chunk', async () => {
       const data = new TextEncoder().encode('Hello, World!');
-      const merkle = await generateMerkleTree(data);
+      const chunked = await generateChunkedHashes(data);
 
       const tamperedData = new TextEncoder().encode('Goodbye, World!');
-      const isValid = await verifyChunk(tamperedData, merkle.tree[0]);
+      const isValid = await verifyChunk(tamperedData, chunked.hashes[0]);
       expect(isValid).toBe(false);
     });
   });
 
-  describe('createMerkleVerifier', () => {
+  describe('createChunkedVerifier', () => {
     it('should verify chunks sequentially', async () => {
       // Create 3 chunks of data
       const chunkSize = 100;
@@ -86,8 +86,8 @@ describe('Merkle Tree', () => {
         data[i] = i % 256;
       }
 
-      const merkle = await generateMerkleTree(data, chunkSize);
-      const verifier = createMerkleVerifier(merkle);
+      const chunked = await generateChunkedHashes(data, chunkSize);
+      const verifier = createChunkedVerifier(chunked);
 
       expect(verifier.totalChunks).toBe(3);
       expect(verifier.currentChunkIndex).toBe(0);
@@ -119,8 +119,8 @@ describe('Merkle Tree', () => {
         data[i] = i % 256;
       }
 
-      const merkle = await generateMerkleTree(data, chunkSize);
-      const verifier = createMerkleVerifier(merkle);
+      const chunked = await generateChunkedHashes(data, chunkSize);
+      const verifier = createChunkedVerifier(chunked);
 
       // First chunk is valid
       const chunk1 = data.slice(0, chunkSize);
@@ -143,10 +143,10 @@ describe('Merkle Tree', () => {
         data[i] = i % 256;
       }
 
-      const merkle = await generateMerkleTree(data, chunkSize);
-      const verifier = createMerkleVerifier(merkle);
+      const chunked = await generateChunkedHashes(data, chunkSize);
+      const verifier = createChunkedVerifier(chunked);
 
-      expect(merkle.tree.length).toBe(2);
+      expect(chunked.hashes.length).toBe(2);
 
       // Feed partial data (less than chunk size)
       const partial1 = data.slice(0, 30);
@@ -175,8 +175,8 @@ describe('Merkle Tree', () => {
       const chunkSize = 100;
       const data = new Uint8Array(200);
 
-      const merkle = await generateMerkleTree(data, chunkSize);
-      const verifier = createMerkleVerifier(merkle);
+      const chunked = await generateChunkedHashes(data, chunkSize);
+      const verifier = createChunkedVerifier(chunked);
 
       // Only provide first chunk
       const chunk1 = data.slice(0, chunkSize);
@@ -191,18 +191,18 @@ describe('Merkle Tree', () => {
     it('should throw for empty data', async () => {
       const data = new Uint8Array(0);
 
-      await expect(generateMerkleTree(data)).rejects.toThrow();
+      await expect(generateChunkedHashes(data)).rejects.toThrow();
     });
 
     it('should handle single byte', async () => {
       const data = new Uint8Array([42]);
-      const merkle = await generateMerkleTree(data);
+      const chunked = await generateChunkedHashes(data);
 
-      expect(merkle.tree.length).toBe(1);
-      expect(merkle.root).toBe(merkle.tree[0]);
+      expect(chunked.hashes.length).toBe(1);
+      expect(chunked.root).toBe(chunked.hashes[0]);
 
       // Verify the single byte
-      const isValid = await verifyChunk(data, merkle.tree[0]);
+      const isValid = await verifyChunk(data, chunked.hashes[0]);
       expect(isValid).toBe(true);
     });
 
@@ -213,12 +213,12 @@ describe('Merkle Tree', () => {
         data[i] = i % 256;
       }
 
-      const merkle = await generateMerkleTree(data, chunkSize);
+      const chunked = await generateChunkedHashes(data, chunkSize);
 
-      expect(merkle.tree.length).toBe(1);
-      expect(merkle.root).toBe(merkle.tree[0]);
+      expect(chunked.hashes.length).toBe(1);
+      expect(chunked.root).toBe(chunked.hashes[0]);
 
-      const verifier = createMerkleVerifier(merkle);
+      const verifier = createChunkedVerifier(chunked);
       const result = await verifier.verifyNextChunk(data);
       expect(result.valid).toBe(true);
       expect(result.index).toBe(0);
@@ -231,11 +231,11 @@ describe('Merkle Tree', () => {
         data[i] = i % 256;
       }
 
-      const merkle = await generateMerkleTree(data, chunkSize);
+      const chunked = await generateChunkedHashes(data, chunkSize);
 
-      expect(merkle.tree.length).toBe(3);
+      expect(chunked.hashes.length).toBe(3);
 
-      const verifier = createMerkleVerifier(merkle);
+      const verifier = createChunkedVerifier(chunked);
 
       for (let i = 0; i < 3; i++) {
         const chunk = data.slice(i * chunkSize, (i + 1) * chunkSize);
@@ -254,11 +254,11 @@ describe('Merkle Tree', () => {
         data[i] = i % 256;
       }
 
-      const merkle = await generateMerkleTree(data, chunkSize);
+      const chunked = await generateChunkedHashes(data, chunkSize);
 
-      expect(merkle.tree.length).toBe(2);
+      expect(chunked.hashes.length).toBe(2);
 
-      const verifier = createMerkleVerifier(merkle);
+      const verifier = createChunkedVerifier(chunked);
 
       const chunk1 = data.slice(0, chunkSize);
       const result1 = await verifier.verifyNextChunk(chunk1);
@@ -276,52 +276,52 @@ describe('Merkle Tree', () => {
         data[i] = i % 256;
       }
 
-      const merkle = await generateMerkleTree(data, chunkSize);
+      const chunked = await generateChunkedHashes(data, chunkSize);
 
-      expect(merkle.tree.length).toBe(1);
+      expect(chunked.hashes.length).toBe(1);
     });
 
     it('should produce different hashes for different data', async () => {
       const data1 = new TextEncoder().encode('Hello');
       const data2 = new TextEncoder().encode('World');
 
-      const merkle1 = await generateMerkleTree(data1);
-      const merkle2 = await generateMerkleTree(data2);
+      const chunked1 = await generateChunkedHashes(data1);
+      const chunked2 = await generateChunkedHashes(data2);
 
-      expect(merkle1.root).not.toBe(merkle2.root);
+      expect(chunked1.root).not.toBe(chunked2.root);
     });
 
     it('should produce consistent hashes for same data', async () => {
       const data = new TextEncoder().encode('Consistent Test Data');
 
-      const merkle1 = await generateMerkleTree(data);
-      const merkle2 = await generateMerkleTree(data);
-      const merkle3 = await generateMerkleTree(data);
+      const chunked1 = await generateChunkedHashes(data);
+      const chunked2 = await generateChunkedHashes(data);
+      const chunked3 = await generateChunkedHashes(data);
 
-      expect(merkle1.root).toBe(merkle2.root);
-      expect(merkle2.root).toBe(merkle3.root);
+      expect(chunked1.root).toBe(chunked2.root);
+      expect(chunked2.root).toBe(chunked3.root);
     });
 
     it('should handle all zeros data', async () => {
       const data = new Uint8Array(500);
       data.fill(0);
 
-      const merkle = await generateMerkleTree(data, 100);
+      const chunked = await generateChunkedHashes(data, 100);
 
-      expect(merkle.tree.length).toBe(5);
+      expect(chunked.hashes.length).toBe(5);
 
       // All chunks should have the same hash (all zeros)
-      expect(merkle.tree[0]).toBe(merkle.tree[1]);
-      expect(merkle.tree[1]).toBe(merkle.tree[2]);
+      expect(chunked.hashes[0]).toBe(chunked.hashes[1]);
+      expect(chunked.hashes[1]).toBe(chunked.hashes[2]);
     });
 
     it('should handle all 0xFF data', async () => {
       const data = new Uint8Array(500);
       data.fill(0xFF);
 
-      const merkle = await generateMerkleTree(data, 100);
+      const chunked = await generateChunkedHashes(data, 100);
 
-      expect(merkle.tree.length).toBe(5);
+      expect(chunked.hashes.length).toBe(5);
     });
 
     it('should detect single bit flip in chunk', async () => {
@@ -331,13 +331,13 @@ describe('Merkle Tree', () => {
         data[i] = i % 256;
       }
 
-      const merkle = await generateMerkleTree(data, chunkSize);
+      const chunked = await generateChunkedHashes(data, chunkSize);
 
       // Flip one bit
       const corrupted = new Uint8Array(data);
       corrupted[50] ^= 0x01; // Flip lowest bit of byte 50
 
-      const isValid = await verifyChunk(corrupted, merkle.tree[0]);
+      const isValid = await verifyChunk(corrupted, chunked.hashes[0]);
       expect(isValid).toBe(false);
     });
 
@@ -347,12 +347,12 @@ describe('Merkle Tree', () => {
         data[i] = i;
       }
 
-      const merkle = await generateMerkleTree(data, 100);
+      const chunked = await generateChunkedHashes(data, 100);
 
       const corrupted = new Uint8Array(data);
       corrupted[0] = data[0] === 0 ? 1 : 0;
 
-      const isValid = await verifyChunk(corrupted, merkle.tree[0]);
+      const isValid = await verifyChunk(corrupted, chunked.hashes[0]);
       expect(isValid).toBe(false);
     });
 
@@ -362,12 +362,12 @@ describe('Merkle Tree', () => {
         data[i] = i;
       }
 
-      const merkle = await generateMerkleTree(data, 100);
+      const chunked = await generateChunkedHashes(data, 100);
 
       const corrupted = new Uint8Array(data);
       corrupted[99] = data[99] === 0 ? 1 : 0;
 
-      const isValid = await verifyChunk(corrupted, merkle.tree[0]);
+      const isValid = await verifyChunk(corrupted, chunked.hashes[0]);
       expect(isValid).toBe(false);
     });
   });
@@ -376,9 +376,9 @@ describe('Merkle Tree', () => {
     it('should produce different hashes for different algorithms', async () => {
       const data = new TextEncoder().encode('Test data');
 
-      const sha256 = await generateMerkleTree(data, DEFAULT_CHUNK_SIZE, 'sha256');
-      const sha384 = await generateMerkleTree(data, DEFAULT_CHUNK_SIZE, 'sha384');
-      const sha512 = await generateMerkleTree(data, DEFAULT_CHUNK_SIZE, 'sha512');
+      const sha256 = await generateChunkedHashes(data, DEFAULT_CHUNK_SIZE, 'sha256');
+      const sha384 = await generateChunkedHashes(data, DEFAULT_CHUNK_SIZE, 'sha384');
+      const sha512 = await generateChunkedHashes(data, DEFAULT_CHUNK_SIZE, 'sha512');
 
       expect(sha256.root).not.toBe(sha384.root);
       expect(sha384.root).not.toBe(sha512.root);
@@ -390,8 +390,8 @@ describe('Merkle Tree', () => {
     it('should verify chunks with matching algorithm', async () => {
       const data = new TextEncoder().encode('Test');
 
-      const merkle384 = await generateMerkleTree(data, DEFAULT_CHUNK_SIZE, 'sha384');
-      const isValid = await verifyChunk(data, merkle384.tree[0], 'sha384');
+      const chunked384 = await generateChunkedHashes(data, DEFAULT_CHUNK_SIZE, 'sha384');
+      const isValid = await verifyChunk(data, chunked384.hashes[0], 'sha384');
       expect(isValid).toBe(true);
     });
   });
@@ -401,8 +401,8 @@ describe('Merkle Tree', () => {
       const chunkSize = 100;
       const data = new Uint8Array(350); // 4 chunks
 
-      const merkle = await generateMerkleTree(data, chunkSize);
-      const verifier = createMerkleVerifier(merkle);
+      const chunked = await generateChunkedHashes(data, chunkSize);
+      const verifier = createChunkedVerifier(chunked);
 
       expect(verifier.totalChunks).toBe(4);
     });
@@ -414,8 +414,8 @@ describe('Merkle Tree', () => {
         data[i] = i % 256;
       }
 
-      const merkle = await generateMerkleTree(data, chunkSize);
-      const verifier = createMerkleVerifier(merkle);
+      const chunked = await generateChunkedHashes(data, chunkSize);
+      const verifier = createChunkedVerifier(chunked);
 
       expect(verifier.currentChunkIndex).toBe(0);
 
@@ -437,8 +437,8 @@ describe('Merkle Tree', () => {
         data[i] = i % 256;
       }
 
-      const merkle = await generateMerkleTree(data, chunkSize);
-      const verifier = createMerkleVerifier(merkle);
+      const chunked = await generateChunkedHashes(data, chunkSize);
+      const verifier = createChunkedVerifier(chunked);
 
       // Feed in 10-byte fragments
       for (let i = 0; i < 100; i += 10) {
@@ -468,10 +468,10 @@ describe('Merkle Tree', () => {
         data[i] = i;
       }
 
-      const merkle = await generateMerkleTree(data, chunkSize);
-      expect(merkle.tree.length).toBe(3);
+      const chunked = await generateChunkedHashes(data, chunkSize);
+      expect(chunked.hashes.length).toBe(3);
 
-      const verifier = createMerkleVerifier(merkle);
+      const verifier = createChunkedVerifier(chunked);
 
       // Feed bytes for first chunk (indices 0-4)
       for (let i = 0; i < 4; i++) {
@@ -510,8 +510,8 @@ describe('Merkle Tree', () => {
         data[i] = i % 256;
       }
 
-      const merkle = await generateMerkleTree(data, chunkSize);
-      const verifier = createMerkleVerifier(merkle);
+      const chunked = await generateChunkedHashes(data, chunkSize);
+      const verifier = createChunkedVerifier(chunked);
 
       // Feed 150 bytes (crosses chunk boundary)
       const bigFragment = data.slice(0, 150);
@@ -537,11 +537,11 @@ describe('Merkle Tree', () => {
         data[i] = i % 256;
       }
 
-      const merkle = await generateMerkleTree(data, chunkSize);
+      const chunked = await generateChunkedHashes(data, chunkSize);
 
-      expect(merkle.tree.length).toBe(100);
+      expect(chunked.hashes.length).toBe(100);
 
-      const verifier = createMerkleVerifier(merkle);
+      const verifier = createChunkedVerifier(chunked);
 
       for (let i = 0; i < 100; i++) {
         const chunk = data.slice(i * chunkSize, (i + 1) * chunkSize);
@@ -561,8 +561,8 @@ describe('Merkle Tree', () => {
         data[i] = i % 256;
       }
 
-      const merkle = await generateMerkleTree(data, chunkSize);
-      const verifier = createMerkleVerifier(merkle);
+      const chunked = await generateChunkedHashes(data, chunkSize);
+      const verifier = createChunkedVerifier(chunked);
 
       // First chunk is corrupted
       const corruptedChunk = new Uint8Array(chunkSize);

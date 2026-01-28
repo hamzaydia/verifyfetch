@@ -10,7 +10,7 @@ const comparisons = [
   { feature: 'Progress Callbacks', native: false, verifyfetch: true },
   { feature: 'Streaming Output', native: false, verifyfetch: true },
   { feature: 'Service Worker Mode', native: false, verifyfetch: true },
-  { feature: 'Merkle Tree (Fail-Fast)', native: false, verifyfetch: true },
+  { feature: 'Chunked Verification (Fail-Fast)', native: false, verifyfetch: true },
   { feature: 'Multi-CDN Failover', native: false, verifyfetch: true },
   { feature: 'Fallback URLs', native: false, verifyfetch: true },
   { feature: 'Manifest System', native: false, verifyfetch: true },
@@ -34,8 +34,8 @@ export function MemoryComparison() {
             <code className="text-primary text-xl sm:text-2xl md:text-3xl">fetch(&#123; integrity &#125;)</code>?
           </h2>
           <p className="text-zinc-400 text-center text-sm sm:text-base mb-8 sm:mb-10 md:mb-12 max-w-2xl mx-auto">
-            Native fetch has basic SRI verification, but VerifyFetch gives you
-            powerful features for production security.
+            Native fetch has basic SRI verification, but VerifyFetch adds
+            streaming, resumable downloads, and fail-fast chunked verification.
           </p>
 
           {/* Comparison Table */}

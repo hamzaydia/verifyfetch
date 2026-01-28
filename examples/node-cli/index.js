@@ -2,7 +2,7 @@
  * VerifyFetch Node.js Example
  *
  * This example demonstrates how to use VerifyFetch to verify file integrity
- * in a Node.js environment, including v0.2.0 features.
+ * in a Node.js environment.
  */
 
 import {
@@ -106,9 +106,9 @@ async function progressTracking() {
   }
 }
 
-// Example 5: Streaming verification (v0.2.0 feature)
+// Example 5: Streaming verification (constant memory)
 async function streamingVerification() {
-  console.log('\n=== Example 5: Streaming Verification (v0.2.0) ===\n');
+  console.log('\n=== Example 5: Streaming Verification ===\n');
 
   const url = 'https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js';
   const sri = 'sha256-qXBd/EfAdjOA2FGrGAG+b3YBn2tn5A6bhz+LSgYD96k=';
@@ -140,9 +140,9 @@ async function streamingVerification() {
   }
 }
 
-// Example 6: Multi-CDN failover (v0.2.0 feature)
+// Example 6: Multi-CDN failover
 async function multiCdnFailover() {
-  console.log('\n=== Example 6: Multi-CDN Failover (v0.2.0) ===\n');
+  console.log('\n=== Example 6: Multi-CDN Failover ===\n');
 
   const sri = 'sha256-jkGwfHRKDeDSwcI+1BQY7LCEmrtWOV0ogC5gG0cw18I=';
   const path = '/npm/lodash@4.17.21/package.json';
@@ -189,9 +189,9 @@ async function checkWasm() {
 
 // Run all examples
 async function main() {
-  console.log('╔═══════════════════════════════════════════╗');
-  console.log('║   VerifyFetch Node.js Examples (v0.2.0)   ║');
-  console.log('╚═══════════════════════════════════════════╝');
+  console.log('╔═══════════════════════════════════════╗');
+  console.log('║   VerifyFetch Node.js Examples        ║');
+  console.log('╚═══════════════════════════════════════╝');
 
   await checkWasm();
   await basicVerification();
@@ -201,15 +201,15 @@ async function main() {
   await streamingVerification();
   await multiCdnFailover();
 
-  console.log('\n═══════════════════════════════════════════');
+  console.log('\n═══════════════════════════════════════');
   console.log('✓ All examples completed!');
-  console.log('\nv0.2.0 Features demonstrated:');
+  console.log('\nFeatures demonstrated:');
   console.log('  • Streaming verification (constant memory)');
   console.log('  • Multi-CDN failover');
   console.log('  • Manifest v2 format');
-  console.log('\nNot shown here (browser-only):');
+  console.log('\nBrowser-only features:');
   console.log('  • Service Worker mode (createVerifyWorker)');
-  console.log('  • Merkle tree verification (use CLI: npx verifyfetch sign --merkle)');
+  console.log('  • Chunked verification (use CLI: npx verifyfetch sign --chunked)');
 }
 
 main().catch(console.error);

@@ -433,7 +433,7 @@ const { stream, verified } = await verifyFetchStream('${inputMode === 'url' ? ur
                 <div className="flex items-center justify-between p-4 bg-primary/5 border border-primary/20 rounded-lg">
                   <div>
                     <p className="text-sm font-medium text-zinc-200">Ready to add runtime verification?</p>
-                    <p className="text-xs text-zinc-500 mt-0.5">Streaming, Merkle trees, Service Worker, Multi-CDN failover</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">Streaming, Chunked verification, Service Worker, Multi-CDN failover</p>
                   </div>
                   <code className="text-sm text-primary font-mono">npm i verifyfetch</code>
                 </div>
@@ -457,7 +457,7 @@ const { stream, verified } = await verifyFetchStream('${inputMode === 'url' ? ur
               Build a <code className="text-primary">vf.manifest.json</code> to verify multiple files automatically.
             </p>
             <p className="text-zinc-500 text-xs mb-6">
-              Works with Manifest Mode or Service Worker. For Merkle tree support (fail-fast on large files), use the CLI.
+              Works with Manifest Mode or Service Worker. For chunked verification (fail-fast on large files), use the CLI.
             </p>
 
             {/* Algorithm Selection for Manifest */}
@@ -605,7 +605,7 @@ createVerifyWorker({ manifestUrl: '/vf.manifest.json' });
 const data = await fetch('/file.wasm'); // auto-verified`}</pre>
                   </div>
                   <p className="text-xs text-zinc-600">
-                    For large files, use CLI for Merkle tree support: <code className="text-zinc-500">npx verifyfetch sign --merkle ./file.bin</code>
+                    For large files, use CLI for chunked verification: <code className="text-zinc-500">npx verifyfetch sign --chunked ./file.bin</code>
                   </p>
                 </div>
               </>

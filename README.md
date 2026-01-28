@@ -5,7 +5,7 @@
 <h1 align="center">VerifyFetch</h1>
 
 <p align="center">
-  <strong>Verify any file you fetch—before you trust it.</strong>
+  <strong>Download large files. Verify them. Resume when it fails.</strong>
 </p>
 
 <p align="center">
@@ -36,20 +36,24 @@ const response = await verifyFetch('/model.bin', {
 
 ## Why VerifyFetch?
 
-[CDN compromises happen.](https://sansec.io/research/polyfill-supply-chain-attack) When polyfill.io was compromised, 100M+ sites were affected.
+### The Problem
 
-Native `fetch({ integrity })` exists, but VerifyFetch gives you:
+Loading large files in the browser is painful:
+
+1. **Memory explosion** - `crypto.subtle.digest()` buffers the entire file. 4GB AI model = 4GB+ RAM = browser crash.
+2. **No fail-fast** - Download 4GB, find corruption at the end, start over.
+3. **CDN compromises** - [polyfill.io](https://sansec.io/research/polyfill-supply-chain-attack) affected 100M+ sites.
+
+### The Solution
 
 | Feature | Native `fetch` | VerifyFetch |
 |---------|---------------|-------------|
 | Basic SRI verification | Yes | Yes |
+| **Constant memory** | No (buffers all) | Yes (streaming WASM) |
+| **Fail-fast on corruption** | No | Yes (chunked verification) |
 | **Progress callbacks** | No | Yes |
-| **Streaming output** | No | Yes |
-| **Service Worker mode** | No | Yes |
-| **Merkle tree (fail-fast)** | No | Yes |
 | **Multi-CDN failover** | No | Yes |
-| **Manifest system** | No | Yes |
-| **CI/CD enforcement** | No | Yes |
+| **Service Worker mode** | No | Yes |
 
 ---
 
@@ -99,14 +103,45 @@ const wasm = await vf.arrayBuffer('/engine.wasm');  // Hash looked up automatica
 
 ---
 
+## For AI Models (WebLLM, Transformers.js, ONNX)
+
+Loading multi-GB models in the browser? This is what VerifyFetch was built for.
+
+**The pain:**
+- Download 4GB model, network drops at 3.8GB, start over
+- Native `crypto.subtle` needs 4GB RAM just to verify a 4GB file
+- No way to detect corruption until after downloading everything
+
+**The fix:**
+
+```typescript
+import { verifyFetchResumable } from 'verifyfetch';
+
+const model = await verifyFetchResumable('/phi-3-mini.gguf', {
+  chunked: manifest.artifacts['/phi-3-mini.gguf'].chunked,
+  persist: true,  // Survives page reload
+  onProgress: ({ percent, resumed }) => {
+    console.log(`${percent}%${resumed ? ' (resumed)' : ''}`);
+  }
+});
+```
+
+- **Memory**: 2MB constant, not 4GB
+- **Resume**: Network fails at 80%? Resume from 80%
+- **Fail-fast**: Detect corruption immediately, not after downloading everything
+
+> WebLLM is considering native integrity support ([#761](https://github.com/mlc-ai/web-llm/issues/761)). VerifyFetch works today.
+
+---
+
 ## Generate Hashes
 
 ```bash
 # Generate SHA-256 hashes
 npx verifyfetch sign ./public/*.wasm ./models/*.bin
 
-# With Merkle tree (for large files - enables fail-fast verification)
-npx verifyfetch sign --merkle --chunk-size 1048576 ./large-model.bin
+# With chunked verification (for large files - enables fail-fast)
+npx verifyfetch sign --chunked --chunk-size 1048576 ./large-model.bin
 
 # Output: vf.manifest.json
 ```
@@ -117,7 +152,7 @@ npx verifyfetch sign --merkle --chunk-size 1048576 ./large-model.bin
 
 ### Streaming Verification
 
-For large files, process chunks as they download:
+For large files, process chunks as they download with constant memory:
 
 ```typescript
 import { verifyFetchStream } from 'verifyfetch';
@@ -135,20 +170,52 @@ for await (const chunk of stream) {
 await verified;  // Throws IntegrityError if hash doesn't match
 ```
 
-### Merkle Tree Verification (Fail-Fast)
+### Resumable Downloads (NEW in v1.0)
+
+**The killer feature:** Download fails at 3.8GB of 4GB? Resume from 3.8GB, not zero.
+
+```typescript
+import { verifyFetchResumable } from 'verifyfetch';
+
+// First attempt - fails at 80%
+const result = await verifyFetchResumable('/model.safetensors', {
+  chunked: manifest.artifacts['/model.safetensors'].chunked,
+  onProgress: ({ chunksVerified, totalChunks, resumed }) => {
+    console.log(`${chunksVerified}/${totalChunks} chunks${resumed ? ' (resumed)' : ''}`);
+  }
+});
+
+// Page reload or network failure...
+
+// Second attempt - automatically resumes from last verified chunk
+const result2 = await verifyFetchResumable('/model.safetensors', {
+  chunked: manifest.artifacts['/model.safetensors'].chunked,
+  onResume: (state) => {
+    console.log(`Resuming from chunk ${state.verifiedChunks}/${totalChunks}`);
+  }
+});
+```
+
+**How it works:**
+1. Each chunk is verified and stored in IndexedDB as it downloads
+2. On failure/reload, loads existing verified chunks from storage
+3. Uses HTTP Range requests to fetch only remaining chunks
+4. Clean up storage automatically on completion
+
+### Chunked Verification (Fail-Fast)
 
 Stop downloading immediately if corruption is detected:
 
 ```typescript
-import { createMerkleVerifier, verifyFetchStream } from 'verifyfetch';
+import { createChunkedVerifier, verifyFetchStream } from 'verifyfetch';
 
-// Generate manifest with Merkle tree
-// npx verifyfetch sign --merkle ./large-model.bin
+// Generate manifest with chunked hashes
+// npx verifyfetch sign --chunked ./large-model.bin
 
-// Verify chunk-by-chunk
-const verifier = createMerkleVerifier(manifest.artifacts['/model.bin'].merkle);
+// Verify chunk-by-chunk as data arrives
+const verifier = createChunkedVerifier(manifest.artifacts['/model.bin'].chunked);
 
-const { stream } = await verifyFetchStream('/model.bin', { sri: merkle.root });
+const { stream } = await verifyFetchStream('/model.bin', { sri: chunked.root });
 
 for await (const chunk of stream) {
   const result = await verifier.verifyNextChunk(chunk);
@@ -161,6 +228,8 @@ for await (const chunk of stream) {
   await processChunk(chunk);
 }
 ```
+
+**How it works:** Each chunk is hashed independently. If chunk 5 of 4000 is corrupt, you find out immediately - not after downloading the other 3995 chunks.
 
 ### Multi-CDN Failover
 
@@ -180,18 +249,6 @@ const response = await verifyFetchFromSources(
     ],
     strategy: 'race'  // 'sequential' | 'race' | 'fastest'
   }
-);
-```
-
-Or use content-addressable URLs:
-
-```typescript
-import { resolveContentAddressable } from 'verifyfetch';
-
-// The hash IS the URL - fetch from any source
-const response = await resolveContentAddressable(
-  'vf://sha256/uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=/model.bin',
-  ['https://cdn1.example.com', 'https://cdn2.example.com']
 );
 ```
 
@@ -224,8 +281,8 @@ await verifyFetch('/main.wasm', {
 # Generate SRI hashes
 npx verifyfetch sign <files...>
 
-# Generate with Merkle tree (for large files)
-npx verifyfetch sign --merkle --chunk-size 1048576 <files...>
+# Generate with chunked hashes (for large files)
+npx verifyfetch sign --chunked --chunk-size 1048576 <files...>
 
 # Verify files match manifest (for CI)
 npx verifyfetch enforce --manifest ./vf.manifest.json
@@ -319,29 +376,49 @@ createVerifyWorker({
 });
 ```
 
-### `registerVerifyWorker(swUrl)` (Client-Side)
+### `verifyFetchResumable(url, options)` (NEW in v1.0)
 
-Register the Service Worker from your app.
+Resumable downloads with chunked verification. Persists progress to IndexedDB.
 
 ```typescript
-// In your app entry point
-import { registerVerifyWorker } from 'verifyfetch/worker';
+const result = await verifyFetchResumable('/model.bin', {
+  chunked: manifest.artifacts['/model.bin'].chunked, // Required
+  persist: true,                    // Store progress in IndexedDB (default: true)
+  onProgress: ({ bytesVerified, totalBytes, chunksVerified, totalChunks, resumed, speed, eta }) => {},
+  onResume: (state) => {},          // Called when resuming
+  chunkTimeout: 30000               // Timeout per chunk request
+});
 
-await registerVerifyWorker('/sw.js');
-// All matching fetches now automatically verified!
+// result: { data: ArrayBuffer, resumed: boolean, chunksResumed: number, totalChunks: number }
 ```
 
-### Merkle Tree Functions
+**Utility functions:**
 
 ```typescript
-import { generateMerkleTree, createMerkleVerifier, verifyChunk } from 'verifyfetch';
+import { canResume, getDownloadProgress, cancelDownload } from 'verifyfetch';
 
-// Generate Merkle tree from data
-const merkle = await generateMerkleTree(data, 1048576); // 1MB chunks
-// { root: 'sha256-...', chunkSize: 1048576, tree: ['sha256-...', ...] }
+// Check if a download can be resumed
+const resumable = await canResume('/model.bin');
+
+// Get progress of paused download
+const progress = await getDownloadProgress('/model.bin');
+// { chunksVerified, totalChunks, bytesVerified, totalBytes, startedAt, lastUpdated }
+
+// Cancel and clear a download
+await cancelDownload('/model.bin');
+```
+
+### Chunked Verification Functions
+
+```typescript
+import { generateChunkedHashes, createChunkedVerifier, verifyChunk } from 'verifyfetch';
+
+// Generate chunk hashes from data
+const chunked = await generateChunkedHashes(data, 1048576); // 1MB chunks
+// { root: 'sha256-...', chunkSize: 1048576, hashes: ['sha256-...', ...] }
 
 // Create verifier for streaming
-const verifier = createMerkleVerifier(merkle);
+const verifier = createChunkedVerifier(chunked);
 const result = await verifier.verifyNextChunk(chunk);
 // { valid: boolean, index: number }
 
@@ -367,7 +444,7 @@ const isValid = await verifyChunk(chunk, 'sha256-...');
 }
 ```
 
-### v2 (With Merkle Tree)
+### v2 (With Chunked Verification)
 
 ```json
 {
@@ -375,11 +452,12 @@ const isValid = await verifyChunk(chunk, 'sha256-...');
   "base": "/",
   "artifacts": {
     "/large-model.bin": {
-      "sri": "sha256-rootHash...",
-      "merkle": {
+      "sri": "sha256-fullFileHash...",
+      "size": 4294967296,
+      "chunked": {
         "root": "sha256-rootHash...",
         "chunkSize": 1048576,
-        "tree": ["sha256-chunk0...", "sha256-chunk1...", "..."]
+        "hashes": ["sha256-chunk0...", "sha256-chunk1...", "..."]
       }
     }
   }
@@ -469,6 +547,48 @@ VerifyFetch uses the same trust model as browser SRI:
 - Malicious insider (wrong hash intentional)
 
 For build protection, use `verifyfetch enforce` in CI.
+
+</details>
+
+<details>
+<summary><strong>Technical Notes</strong></summary>
+
+### About "Chunked Verification"
+
+The chunked verification feature hashes each chunk independently. This is simpler than a true Merkle tree (no hierarchical hashing, no proof-of-inclusion). The benefit is fail-fast: detect corruption at chunk N without downloading chunks N+1 through END.
+
+The "root" hash is computed by concatenating all chunk hashes and hashing the result. This verifies the chunk list wasn't modified but doesn't provide Merkle proofs.
+
+### Memory Usage
+
+| Mode | Memory |
+|------|--------|
+| Native `crypto.subtle.digest()` | ~file size |
+| `verifyFetch()` | ~file size (buffered) |
+| `verifyFetchStream()` | ~2MB constant |
+| Chunked verification | ~chunkSize + overhead |
+
+</details>
+
+<details>
+<summary><strong>Limitations</strong></summary>
+
+**What VerifyFetch does NOT do:**
+
+- **Build verification** - If your build process is compromised, you'll ship wrong hashes. Use `verifyfetch enforce` in CI.
+- **Key management** - No signature verification (yet). You trust whoever generates the manifest.
+- **Offline-first** - Manifests are fetched on load. No offline cache (yet).
+
+**Memory caveat:**
+
+- **WASM required for true streaming** - Without WASM, SubtleCrypto buffers the entire file in memory. A warning is shown at 50MB+. WASM loads automatically if available.
+
+**Browser requirements:**
+
+- Crypto: `crypto.subtle` (all modern browsers)
+- Streaming: `ReadableStream` (all modern browsers)
+- Resumable: `IndexedDB` (all modern browsers)
+- WASM hashing: `WebAssembly` (optional, falls back to SubtleCrypto)
 
 </details>
 

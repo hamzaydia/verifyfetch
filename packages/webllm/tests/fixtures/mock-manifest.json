@@ -1,0 +1,37 @@
+{
+  "version": 2,
+  "models": {
+    "test-model-small": {
+      "baseUrl": "https://example.com/models/test-small/",
+      "files": {
+        "config.json": {
+          "sri": "sha256-n4bQgYhMfWWaL28MTgkFjqq2MQ55+W/pJGmngHmfp+A="
+        },
+        "tokenizer.json": {
+          "sri": "sha256-LCa0a2j/xo/5m0U8HTBBNBNCLXBkg7+g+YpeiGJm564="
+        }
+      }
+    },
+    "test-model-chunked": {
+      "baseUrl": "https://example.com/models/test-chunked/",
+      "files": {
+        "config.json": {
+          "sri": "sha256-n4bQgYhMfWWaL28MTgkFjqq2MQ55+W/pJGmngHmfp+A="
+        },
+        "params_shard_0.bin": {
+          "sri": "sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
+          "size": 3145728,
+          "chunked": {
+            "root": "sha256-abc123",
+            "chunkSize": 1048576,
+            "hashes": [
+              "sha256-chunk0hash00000000000000000000000000000000=",
+              "sha256-chunk1hash00000000000000000000000000000000=",
+              "sha256-chunk2hash00000000000000000000000000000000="
+            ]
+          }
+        }
+      }
+    }
+  }
+}

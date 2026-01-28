@@ -1,11 +1,15 @@
 /**
- * Merkle Tree Implementation for Chunked Verification
+ * Chunked Verification Implementation
  *
- * Enables fail-fast verification where corrupt chunks are detected
- * without downloading the entire file.
+ * Enables fail-fast verification by checking chunks as they download.
+ * If a chunk is corrupt, detection happens immediately - no need to
+ * download the entire file first.
+ *
+ * Note: This is NOT a true Merkle tree (no hierarchical hashing or proofs).
+ * It's simpler: hash each chunk independently, verify on arrival.
  */
 
-import type { SRIString, MerkleInfo, HashAlgorithm } from './types.js';
+import type { SRIString, ChunkedInfo, HashAlgorithm } from './types.js';
 import { createHasher } from './wasm-loader.js';
 
 /**
@@ -15,26 +19,26 @@ import { createHasher } from './wasm-loader.js';
 export const DEFAULT_CHUNK_SIZE = 1024 * 1024; // 1MB
 
 /**
- * Generate Merkle tree information for a file/data
+ * Generate chunked verification info for a file
  *
  * @param data - The complete file data
  * @param chunkSize - Size of each chunk (default 1MB)
  * @param algorithm - Hash algorithm (default sha256)
- * @returns MerkleInfo with root hash and chunk hashes
+ * @returns ChunkedInfo with root hash and per-chunk hashes
  *
  * @example
  * ```ts
  * const data = await fs.readFile('model.bin');
- * const merkle = await generateMerkleTree(data);
- * // merkle.root = "sha256-abc..."
- * // merkle.tree = ["sha256-chunk0...", "sha256-chunk1...", ...]
+ * const chunked = await generateChunkedHashes(data);
+ * // chunked.root = "sha256-abc..."
+ * // chunked.hashes = ["sha256-chunk0...", "sha256-chunk1...", ...]
  * ```
  */
-export async function generateMerkleTree(
+export async function generateChunkedHashes(
   data: Uint8Array | ArrayBuffer,
   chunkSize: number = DEFAULT_CHUNK_SIZE,
   algorithm: HashAlgorithm = 'sha256'
-): Promise<MerkleInfo> {
+): Promise<ChunkedInfo> {
   const bytes = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
   const chunks = splitIntoChunks(bytes, chunkSize);
 
@@ -45,13 +49,13 @@ export async function generateMerkleTree(
     chunkHashes.push(hash);
   }
 
-  // Compute Merkle root from leaf hashes
-  const root = await computeMerkleRoot(chunkHashes, algorithm);
+  // Compute root from chunk hashes (simple concatenation + hash)
+  const root = await computeRootHash(chunkHashes, algorithm);
 
   return {
     root,
     chunkSize,
-    tree: chunkHashes,
+    hashes: chunkHashes,
   };
 }
 
@@ -73,13 +77,13 @@ export async function verifyChunk(
 }
 
 /**
- * Create a streaming Merkle verifier
+ * Create a streaming chunk verifier
  *
  * This allows verifying chunks as they arrive, enabling fail-fast behavior.
  *
  * @example
  * ```ts
- * const verifier = createMerkleVerifier(merkleInfo);
+ * const verifier = createChunkedVerifier(chunkedInfo);
  *
  * for await (const chunk of stream) {
  *   const result = await verifier.verifyNextChunk(chunk);
@@ -92,12 +96,13 @@ export async function verifyChunk(
  * await verifier.finalize(); // Verify all chunks were received
  * ```
  */
-export function createMerkleVerifier(merkle: MerkleInfo): MerkleVerifier {
+export function createChunkedVerifier(chunked: ChunkedInfo): ChunkedVerifier {
   let currentIndex = 0;
   let bytesProcessed = 0;
   let buffer = new Uint8Array(0);
 
-  const algorithm = parseAlgorithmFromSri(merkle.root);
+  const algorithm = parseAlgorithmFromSri(chunked.root);
+  const chunkHashes = chunked.hashes;
 
   return {
     get currentChunkIndex() {
@@ -105,7 +110,7 @@ export function createMerkleVerifier(merkle: MerkleInfo): MerkleVerifier {
     },
 
     get totalChunks() {
-      return merkle.tree.length;
+      return chunkHashes.length;
     },
 
     get bytesProcessed() {
@@ -120,7 +125,7 @@ export function createMerkleVerifier(merkle: MerkleInfo): MerkleVerifier {
       buffer = newBuffer;
 
       // If all chunks already processed, return partial
-      if (currentIndex >= merkle.tree.length) {
+      if (currentIndex >= chunkHashes.length) {
         return {
           index: -1,
           valid: true,
@@ -130,11 +135,11 @@ export function createMerkleVerifier(merkle: MerkleInfo): MerkleVerifier {
       }
 
       // Process complete chunks (not the last one)
-      while (buffer.length >= merkle.chunkSize && currentIndex < merkle.tree.length - 1) {
-        const chunk = buffer.slice(0, merkle.chunkSize);
-        buffer = buffer.slice(merkle.chunkSize);
+      while (buffer.length >= chunked.chunkSize && currentIndex < chunkHashes.length - 1) {
+        const chunk = buffer.slice(0, chunked.chunkSize);
+        buffer = buffer.slice(chunked.chunkSize);
 
-        const expectedHash = merkle.tree[currentIndex];
+        const expectedHash = chunkHashes[currentIndex];
         const valid = await verifyChunk(chunk, expectedHash, algorithm);
 
         bytesProcessed += chunk.length;
@@ -155,10 +160,10 @@ export function createMerkleVerifier(merkle: MerkleInfo): MerkleVerifier {
 
       // Check if this is the last chunk and we have enough data
       // For the last chunk, we accept any remaining data
-      if (currentIndex === merkle.tree.length - 1 && buffer.length > 0) {
+      if (currentIndex === chunkHashes.length - 1 && buffer.length > 0) {
         // For the last chunk, we need to know when all data has arrived
         // This is tricky without knowing total size, so we verify what we have
-        const expectedHash = merkle.tree[currentIndex];
+        const expectedHash = chunkHashes[currentIndex];
         const valid = await verifyChunk(buffer, expectedHash, algorithm);
 
         bytesProcessed += buffer.length;
@@ -186,9 +191,9 @@ export function createMerkleVerifier(merkle: MerkleInfo): MerkleVerifier {
     },
 
     async finalize(): Promise<void> {
-      if (currentIndex !== merkle.tree.length) {
+      if (currentIndex !== chunkHashes.length) {
         throw new Error(
-          `Incomplete data: expected ${merkle.tree.length} chunks, got ${currentIndex}`
+          `Incomplete data: expected ${chunkHashes.length} chunks, got ${currentIndex}`
         );
       }
 
@@ -200,9 +205,9 @@ export function createMerkleVerifier(merkle: MerkleInfo): MerkleVerifier {
 }
 
 /**
- * Merkle verifier interface
+ * Chunk verifier interface
  */
-export interface MerkleVerifier {
+export interface ChunkedVerifier {
   readonly currentChunkIndex: number;
   readonly totalChunks: number;
   readonly bytesProcessed: number;
@@ -257,27 +262,27 @@ async function hashChunk(
 }
 
 /**
- * Compute Merkle root from leaf hashes
+ * Compute root hash from chunk hashes
  *
- * For simplicity, we use a simple concatenation + hash approach.
- * A full binary Merkle tree would be more efficient for proofs,
- * but this is sufficient for streaming verification.
+ * This uses simple concatenation + hash, NOT a hierarchical Merkle tree.
+ * The root serves as a quick check that the chunk list wasn't modified,
+ * but doesn't provide proof-of-inclusion for individual chunks.
  */
-async function computeMerkleRoot(
-  leafHashes: SRIString[],
+async function computeRootHash(
+  chunkHashes: SRIString[],
   algorithm: HashAlgorithm
 ): Promise<SRIString> {
-  if (leafHashes.length === 0) {
-    throw new Error('Cannot compute Merkle root of empty tree');
+  if (chunkHashes.length === 0) {
+    throw new Error('Cannot compute root hash of empty chunk list');
   }
 
-  if (leafHashes.length === 1) {
-    return leafHashes[0];
+  if (chunkHashes.length === 1) {
+    return chunkHashes[0];
   }
 
-  // Concatenate all leaf hashes and hash the result
+  // Concatenate all chunk hashes and hash the result
   const encoder = new TextEncoder();
-  const concatenated = leafHashes.join('');
+  const concatenated = chunkHashes.join('');
   const data = encoder.encode(concatenated);
 
   const hasher = await createHasher(algorithm);
@@ -294,3 +299,4 @@ function parseAlgorithmFromSri(sri: SRIString): HashAlgorithm {
   if (sri.startsWith('sha512-')) return 'sha512';
   throw new Error(`Unknown algorithm in SRI: ${sri}`);
 }
+

@@ -5,14 +5,13 @@
 <h1 align="center">verifyfetch</h1>
 
 <p align="center">
-  <strong>Verify any file you fetch—before you trust it.</strong>
+  Download large files. Verify them. Resume when it fails.
 </p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/verifyfetch"><img src="https://img.shields.io/npm/v/verifyfetch.svg" alt="npm version" /></a>
   <a href="https://www.npmjs.com/package/verifyfetch"><img src="https://img.shields.io/npm/dm/verifyfetch.svg" alt="npm downloads" /></a>
   <a href="https://bundlephobia.com/package/verifyfetch"><img src="https://img.shields.io/bundlephobia/minzip/verifyfetch" alt="bundle size" /></a>
-  <img src="https://img.shields.io/badge/TypeScript-Ready-blue.svg" alt="TypeScript" />
 </p>
 
 ---
@@ -31,93 +30,70 @@ import { verifyFetch } from 'verifyfetch';
 const response = await verifyFetch('/model.bin', {
   sri: 'sha256-uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek='
 });
-// Throws if hash doesn't match. Your users are protected.
+// Throws if hash doesn't match
 ```
 
-## Why?
+## The Problem
 
-Browser SRI only works on `<script>` tags. **`fetch()` has no protection.**
+**Download a 4GB AI model. Network drops at 3.8GB. Start over.**
 
-Your WASM modules, AI models, and config files are fetched without any integrity verification. One CDN compromise = malicious code in your users' browsers.
+Also:
+- Native `crypto.subtle.digest()` buffers entire file = 4GB model needs 4GB RAM
+- No way to detect corruption until after downloading everything
 
-### Memory Efficiency
+## The Solution
 
-Native `crypto.subtle.digest()` loads the **entire file into memory**. VerifyFetch streams with constant memory:
+| Problem | VerifyFetch |
+|---------|-------------|
+| Memory explosion | Streaming verification (2MB constant) |
+| Resume downloads | Persist to IndexedDB, resume from last chunk |
+| Late corruption detection | Fail-fast at first bad chunk |
 
-| File Size | Native `crypto.subtle` | VerifyFetch |
-|-----------|------------------------|-------------|
-| 100 MB    | 100 MB RAM             | **2 MB RAM** |
-| 1 GB      | 1 GB RAM (crashes mobile) | **2 MB RAM** |
-| 4 GB AI model | Browser crash | **2 MB RAM** |
+## Use Cases
 
-## Features
+- **AI models** - WebLLM, Transformers.js, ONNX (multi-GB files)
+- **WASM modules** - Game engines, video codecs
+- **Large data** - Fonts, images, datasets
 
-**Fallback URLs** — Auto-retry from backup on failure
+## API
+
 ```typescript
-await verifyFetch('/main.wasm', {
-  sri: 'sha256-...',
-  onFail: { fallbackUrl: '/backup.wasm' }
-});
+// Basic verification
+verifyFetch(url, { sri: 'sha256-...' })
+
+// Streaming (constant memory)
+verifyFetchStream(url, { sri: 'sha256-...' })
+
+// Resumable (survives page reload)
+verifyFetchResumable(url, { chunked: {...}, persist: true })
+
+// Multi-CDN failover
+verifyFetchFromSources(sri, path, { sources: [...] })
+
+// Service Worker (automatic verification)
+createVerifyWorker({ manifestUrl: '/vf.manifest.json' })
 ```
 
-**Progress Tracking** — Monitor large downloads
-```typescript
-await verifyFetch('/model.bin', {
-  sri: 'sha256-...',
-  onProgress: (loaded, total) => console.log(`${loaded}/${total}`)
-});
-```
+## Important Notes
 
-**Manifest Mode** — Manage multiple files
-```typescript
-import { createVerifyFetcher } from 'verifyfetch';
+- **WASM for streaming**: True constant-memory streaming requires WASM. Without it, files >50MB are buffered (warning shown in console).
+- **SRI format**: Hashes use [Subresource Integrity](https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity) format (`sha256-BASE64...`)
+- **Resumable downloads**: Requires server support for HTTP Range requests.
 
-const vf = await createVerifyFetcher({
-  manifestUrl: '/vf.manifest.json'
-});
+## Full Documentation
 
-await vf.arrayBuffer('/model.bin');  // Hash auto-looked up
-```
+See [GitHub README](https://github.com/hamzaydia/verifyfetch) for:
+- Complete API reference
+- Manifest format
+- CLI commands
+- Examples
 
 ## Generate Hashes
 
 ```bash
-npx @verifyfetch/cli sign ./public/*.wasm
-# Creates vf.manifest.json with SRI hashes
+npx verifyfetch sign ./public/*.wasm
+npx verifyfetch sign --chunked ./large-model.bin  # For resumable downloads
 ```
-
-## API
-
-### `verifyFetch(url, options)`
-
-| Option | Type | Description |
-|--------|------|-------------|
-| `sri` | `string` | SRI hash (required). Format: `sha256-BASE64` |
-| `onFail` | `'block' \| 'warn' \| { fallbackUrl }` | Failure behavior. Default: `'block'` |
-| `onProgress` | `(loaded, total) => void` | Progress callback |
-
-### `createVerifyFetcher(options)`
-
-| Option | Type | Description |
-|--------|------|-------------|
-| `manifestUrl` | `string` | URL to manifest JSON |
-| `manifest` | `object` | Inline manifest (alternative to URL) |
-| `baseUrl` | `string` | Base URL for resolving paths |
-
-Returns object with: `fetch()`, `arrayBuffer()`, `json()`, `text()`, `blob()`, `preload()`, `reloadManifest()`
-
-## Use Cases
-
-- **WebAssembly** — Verify `.wasm` modules before instantiation
-- **AI Models** — Secure multi-GB model downloads (WebLLM, Transformers.js, ONNX)
-- **Config Files** — Ensure critical JSON/YAML isn't tampered
-- **Any Binary** — Fonts, images, data files
-
-## Links
-
-- [GitHub](https://github.com/hamzaydia/verifyfetch)
-- [CLI Package](https://www.npmjs.com/package/@verifyfetch/cli)
-- [Issues](https://github.com/hamzaydia/verifyfetch/issues)
 
 ## License
 

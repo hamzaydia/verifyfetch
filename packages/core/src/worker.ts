@@ -199,7 +199,7 @@ function shouldVerify(pathname: string, options: Required<VerifyWorkerOptions>):
 }
 
 /**
- * Simple glob matching (supports * wildcard)
+ * Simple glob matching (supports * and ** wildcards)
  */
 function matchGlob(path: string, pattern: string): boolean {
   // Handle *.ext patterns
@@ -214,11 +214,12 @@ function matchGlob(path: string, pattern: string): boolean {
   }
 
   // Convert glob to regex
-  const regexPattern = pattern
+  // Handle **/ patterns (zero or more directory levels)
+  let regexPattern = pattern
     .replace(/\./g, '\\.')
-    .replace(/\*\*/g, '{{DOUBLESTAR}}')
-    .replace(/\*/g, '[^/]*')
-    .replace(/{{DOUBLESTAR}}/g, '.*');
+    .replace(/\*\*\//g, '(?:.*\\/)?') // **/ matches zero or more directories
+    .replace(/\*\*/g, '.*') // ** alone matches anything
+    .replace(/\*/g, '[^/]*'); // * matches anything except /
 
   return new RegExp(`^${regexPattern}$`).test(path);
 }

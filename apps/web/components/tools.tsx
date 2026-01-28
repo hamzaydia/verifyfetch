@@ -48,7 +48,7 @@ export function Tools() {
             Free Security Tools
           </h2>
           <p className="text-zinc-400 text-center text-sm sm:text-base mb-8 sm:mb-10 md:mb-12 max-w-2xl mx-auto">
-            Powerful browser-based tools to help you secure your applications.
+            Free browser-based tools to help you secure your applications.
             No installation required.
           </p>
 

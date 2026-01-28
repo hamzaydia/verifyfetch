@@ -2,7 +2,7 @@
  * VerifyFetch Vite Example
  *
  * Demonstrates verified fetching of CDN assets in a Vite application,
- * including v0.2.0 streaming verification.
+ * including streaming verification.
  */
 
 import { verifyFetch, verifyFetchStream, isUsingWasm, type SRIString } from 'verifyfetch';
@@ -81,7 +81,7 @@ async function fetchAsset(type: 'json' | 'js') {
   }
 }
 
-// Streaming fetch (verifyFetchStream) - v0.2.0 feature
+// Streaming fetch (verifyFetchStream) - constant memory
 async function fetchStreamAsset() {
   const asset = ASSETS.js;
   updateProgress(streamProgressEl, 0);
@@ -134,5 +134,5 @@ fetchStreamBtn.addEventListener('click', fetchStreamAsset);
 // Check WASM status on load
 isUsingWasm().then((using) => {
   console.log(`[VerifyFetch] Using ${using ? 'WASM' : 'SubtleCrypto'} hasher`);
-  console.log('[VerifyFetch] v0.2.0 features: Streaming, Multi-CDN, Service Worker, Merkle Tree');
+  console.log('[VerifyFetch] v1.0.0 features: Streaming, Multi-CDN, Service Worker, Resumable Downloads');
 });

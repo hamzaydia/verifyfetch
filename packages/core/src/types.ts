@@ -188,16 +188,16 @@ export interface StreamingHasher {
 export interface VerifyFetchStreamResult {
   /**
    * ReadableStream of verified chunks
-   * In non-Merkle mode: chunks are streamed but verification completes at the end
-   * In Merkle mode: each chunk is verified before being yielded
+   * In non-chunked mode: chunks are streamed but verification completes at the end
+   * In chunked mode: each chunk is verified before being yielded
    */
   stream: ReadableStream<Uint8Array>;
 
   /**
    * Promise that resolves when verification completes successfully
    * Rejects with IntegrityError if verification fails
-   * In non-Merkle mode: resolves after entire file is downloaded and verified
-   * In Merkle mode: resolves after all chunks are verified
+   * In non-chunked mode: resolves after entire file is downloaded and verified
+   * In chunked mode: resolves after all chunks are verified
    */
   verified: Promise<void>;
 
@@ -212,19 +212,24 @@ export interface VerifyFetchStreamResult {
  */
 export interface VerifyFetchStreamOptions extends VerifyFetchOptions {
   /**
-   * Enable Merkle tree verification mode
-   * Requires manifest v2 with merkle data for the file
+   * Enable chunked verification mode
+   * Requires manifest with chunked data for the file
    * Each chunk will be verified before being yielded to the consumer
    */
-  merkle?: boolean;
+  chunked?: boolean;
 }
 
 /**
- * Merkle tree information for chunked verification
+ * Chunked verification info
+ *
+ * Contains per-chunk hashes for fail-fast verification.
+ * Each chunk is hashed independently - if chunk N is corrupt,
+ * you find out at chunk N, not after downloading the whole file.
  */
-export interface MerkleInfo {
+export interface ChunkedInfo {
   /**
-   * Merkle root hash (SRI format)
+   * Root hash computed from all chunk hashes (SRI format)
+   * Computed by concatenating all chunk hashes and hashing the result.
    */
   root: SRIString;
 
@@ -235,14 +240,14 @@ export interface MerkleInfo {
   chunkSize: number;
 
   /**
-   * Array of chunk hashes (SRI format)
-   * tree[0] is hash of chunk 0, tree[1] is hash of chunk 1, etc.
+   * Array of per-chunk hashes (SRI format)
+   * hashes[0] is hash of chunk 0, hashes[1] is hash of chunk 1, etc.
    */
-  tree: SRIString[];
+  hashes: SRIString[];
 }
 
 /**
- * VF Manifest v2 format with Merkle tree support
+ * VF Manifest v2 format with chunked verification support
  */
 export interface VFManifestV2 {
   /**
@@ -266,19 +271,19 @@ export interface VFManifestV2 {
  */
 export interface VFArtifactV2 {
   /**
-   * SRI hash of the entire artifact (for backwards compatibility)
+   * SRI hash of the entire artifact
    */
   sri?: SRIString;
 
   /**
-   * File size in bytes (required for Merkle mode)
+   * File size in bytes
    */
   size?: number;
 
   /**
-   * Merkle tree information for chunked verification
+   * Chunked verification info for fail-fast downloads
    */
-  merkle?: MerkleInfo;
+  chunked?: ChunkedInfo;
 
   /**
    * URL to detached signature file (optional)

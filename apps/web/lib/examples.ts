@@ -33,13 +33,13 @@ await verified;
 console.log('Streaming verification complete!');`,
   },
 
-  merkle: {
-    title: 'Merkle Tree',
-    code: `import { createMerkleVerifier } from 'verifyfetch';
+  chunked: {
+    title: 'Chunked Verification',
+    code: `import { createChunkedVerifier } from 'verifyfetch';
 
 // Fail-fast verification for large files
 // Detects corruption at the first bad chunk!
-const verifier = createMerkleVerifier(merkleInfo);
+const verifier = createChunkedVerifier(chunkedInfo);
 
 for await (const chunk of stream) {
   const result = await verifier.verifyNextChunk(chunk);
@@ -52,8 +52,8 @@ for await (const chunk of stream) {
   await processChunk(chunk);
 }
 
-// Generate Merkle manifests with CLI:
-// npx verifyfetch sign --merkle ./large-model.bin`,
+// Generate chunked manifests with CLI:
+// npx verifyfetch sign --chunked ./large-model.bin`,
   },
 
   worker: {
@@ -111,13 +111,13 @@ const model = await vf.arrayBuffer('/models/phi-3.bin');
 const config = await vf.json('/config/settings.json');
 const wasm = await vf.arrayBuffer('/engine.wasm');
 
-// Manifest v2 format (with optional Merkle support):
+// Manifest v2 format (with optional chunked verification):
 // {
 //   "version": 2,
 //   "artifacts": {
 //     "/model.bin": {
 //       "sri": "sha256-...",
-//       "merkle": { "root": "...", "chunkSize": 1048576 }
+//       "chunked": { "root": "...", "chunkSize": 1048576, "hashes": [...] }
 //     }
 //   }
 // }`,
