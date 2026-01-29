@@ -7,8 +7,8 @@ This folder contains example projects demonstrating how to use VerifyFetch in di
 | Example | Description | Technologies |
 |---------|-------------|--------------|
 | [node-cli](./node-cli/) | Command-line usage in Node.js | Node.js, ESM |
-| [next-app](./next-app/) | React app with custom hook | Next.js 15, React 19 |
-| [vite-app](./vite-app/) | Vanilla TypeScript web app | Vite 6, TypeScript |
+| [next-app](./next-app/) | React app with custom hook | Next.js 16, React 19 |
+| [vite-app](./vite-app/) | Vanilla TypeScript web app | Vite 7, TypeScript |
 
 ## Running the Examples
 

@@ -4,7 +4,7 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.1.x   | :white_check_mark: |
+| 1.0.x   | :white_check_mark: |
 
 ## Reporting a Vulnerability
 
@@ -55,5 +55,5 @@ When using VerifyFetch:
 
 ## Known Limitations
 
-- v0.1 supports hash verification only (signature verification coming in v0.2)
+- v1.0 supports hash verification only (signature verification planned for future release)
 - SubtleCrypto fallback loads entire file into memory (use WASM for large files)
