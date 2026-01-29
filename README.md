@@ -42,7 +42,7 @@ Loading large files in the browser is painful:
 
 1. **Memory explosion** - `crypto.subtle.digest()` buffers the entire file. 4GB AI model = 4GB+ RAM = browser crash.
 2. **No fail-fast** - Download 4GB, find corruption at the end, start over.
-3. **CDN compromises** - [polyfill.io](https://sansec.io/research/polyfill-supply-chain-attack) affected 100M+ sites.
+3. **CDN compromises** - [polyfill.io](https://sansec.io/research/polyfill-supply-chain-attack) affected 100K+ sites.
 
 ### The Solution
 
