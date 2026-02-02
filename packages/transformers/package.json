@@ -1,15 +1,15 @@
 {
-  "name": "@verifyfetch/webllm",
+  "name": "@verifyfetch/transformers",
   "version": "1.1.0",
-  "description": "Verified, resumable model loading for WebLLM. Integrity verification for AI models in the browser.",
+  "description": "Verified, resumable model loading for Transformers.js. Integrity verification for AI models in the browser.",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     }
   },
   "files": [
@@ -19,15 +19,17 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "vitest",
-    "test:browser": "npx serve tests -p 3000 -C",
     "clean": "rm -rf dist"
   },
   "keywords": [
-    "webllm",
-    "mlc",
-    "llm",
+    "transformers",
+    "transformers.js",
+    "huggingface",
+    "onnx",
     "ai",
     "machine-learning",
+    "browser-ai",
+    "model-integrity",
     "integrity",
     "verification",
     "resumable",
@@ -43,7 +45,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/hamzaydia/verifyfetch",
-    "directory": "packages/webllm"
+    "directory": "packages/transformers"
   },
   "homepage": "https://verifyfetch.com",
   "bugs": {
@@ -53,15 +55,14 @@
     "verifyfetch": "workspace:^"
   },
   "peerDependencies": {
-    "@mlc-ai/web-llm": ">=0.2.0"
+    "@huggingface/transformers": ">=3.0.0"
   },
   "peerDependenciesMeta": {
-    "@mlc-ai/web-llm": {
+    "@huggingface/transformers": {
       "optional": true
     }
   },
   "devDependencies": {
-    "@mlc-ai/web-llm": "^0.2.80",
     "@types/node": "^20.0.0",
     "fake-indexeddb": "^6.2.5",
     "tsup": "^8.0.0",

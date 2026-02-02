@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "models": {
+    "Phi-3-mini-4k-instruct-q4f16_1-MLC": {
+      "baseUrl": "https://huggingface.co/mlc-ai/Phi-3-mini-4k-instruct-q4f16_1-MLC/resolve/main/",
+      "files": {}
+    }
+  },
+  "_note": "Run 'npx verifyfetch hash-model mlc-ai/Phi-3-mini-4k-instruct-q4f16_1-MLC --out packages/manifests/webllm/Phi-3-mini-4k-instruct-q4f16_1-MLC.json' to populate with real hashes"
+}

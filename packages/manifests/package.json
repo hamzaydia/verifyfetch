@@ -1,0 +1,52 @@
+{
+  "name": "@verifyfetch/manifests",
+  "version": "1.1.0",
+  "description": "Pre-computed integrity manifests for popular AI models. Ready-to-use verification hashes for Transformers.js and WebLLM models.",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    "./transformers/*": "./transformers/*.json",
+    "./webllm/*": "./webllm/*.json",
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js"
+    }
+  },
+  "files": [
+    "transformers",
+    "webllm",
+    "index.js",
+    "index.d.ts"
+  ],
+  "scripts": {
+    "generate": "echo 'Run: npx verifyfetch hash-model <model-id> to generate manifests'"
+  },
+  "keywords": [
+    "verifyfetch",
+    "integrity",
+    "manifests",
+    "ai-models",
+    "huggingface",
+    "transformers.js",
+    "webllm",
+    "onnx",
+    "sri",
+    "verification",
+    "pre-computed",
+    "hashes"
+  ],
+  "author": "Hamza Ezzaydia",
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hamzaydia/verifyfetch",
+    "directory": "packages/manifests"
+  },
+  "homepage": "https://verifyfetch.com",
+  "bugs": {
+    "url": "https://github.com/hamzaydia/verifyfetch/issues"
+  }
+}

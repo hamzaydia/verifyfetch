@@ -4,9 +4,10 @@
  * VerifyFetch CLI
  *
  * Commands:
- *   sign     Generate SRI hashes and create/update manifest
- *   enforce  Verify manifest matches actual files (for CI)
- *   init     Initialize VerifyFetch in a project
+ *   sign        Generate SRI hashes and create/update manifest
+ *   enforce     Verify manifest matches actual files (for CI)
+ *   init        Initialize VerifyFetch in a project
+ *   hash-model  Generate a verification manifest for a Hugging Face model
  */
 
 import { Command } from 'commander';
@@ -17,6 +18,7 @@ import { dirname, join } from 'node:path';
 import { signCommand } from './commands/sign.js';
 import { enforceCommand } from './commands/enforce.js';
 import { initCommand } from './commands/init.js';
+import { hashModelCommand } from './commands/hash-model.js';
 
 // Read version from package.json dynamically
 const __filename = fileURLToPath(import.meta.url);
@@ -54,6 +56,7 @@ const program = new Command()
 program.addCommand(signCommand);
 program.addCommand(enforceCommand);
 program.addCommand(initCommand);
+program.addCommand(hashModelCommand);
 
 // Show banner and help if no args
 if (process.argv.length <= 2) {

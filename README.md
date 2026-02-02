@@ -132,6 +132,48 @@ const model = await verifyFetchResumable('/phi-3-mini.gguf', {
 
 > WebLLM is considering native integrity support ([#761](https://github.com/mlc-ai/web-llm/issues/761)). VerifyFetch works today.
 
+### Transformers.js Integration (NEW in v1.1)
+
+Drop-in verified model loading for [Transformers.js](https://huggingface.co/docs/transformers.js):
+
+```bash
+npm install @verifyfetch/transformers @huggingface/transformers
+```
+
+**Step 1:** Generate a manifest for your model:
+
+```bash
+npx verifyfetch hash-model Xenova/distilbert-base-uncased-finetuned-sst-2-english
+# Output: ./models.vf.manifest.json — place in your public/ directory
+```
+
+**Step 2:** Use `verifiedPipeline` (recommended):
+
+```typescript
+import { verifiedPipeline } from '@verifyfetch/transformers';
+
+const classifier = await verifiedPipeline(
+  'sentiment-analysis',
+  'Xenova/distilbert-base-uncased-finetuned-sst-2-english',
+  { manifestUrl: '/models.vf.manifest.json' }
+);
+
+const result = await classifier('I love this!');
+// [{ label: 'POSITIVE', score: 0.99 }]
+```
+
+Or verify **all** Transformers.js downloads globally with one line:
+
+```typescript
+import { enableVerification } from '@verifyfetch/transformers';
+import { pipeline } from '@huggingface/transformers';
+
+await enableVerification({ manifestUrl: '/models.vf.manifest.json' });
+
+// Now every pipeline() call is automatically verified
+const classifier = await pipeline('sentiment-analysis', 'Xenova/distilbert-base-uncased-finetuned-sst-2-english');
+```
+
 ---
 
 ## Generate Hashes
@@ -283,6 +325,9 @@ npx verifyfetch sign <files...>
 
 # Generate with chunked hashes (for large files)
 npx verifyfetch sign --chunked --chunk-size 1048576 <files...>
+
+# Hash a Hugging Face model (NEW in v1.1)
+npx verifyfetch hash-model Xenova/distilbert-base-uncased-finetuned-sst-2-english
 
 # Verify files match manifest (for CI)
 npx verifyfetch enforce --manifest ./vf.manifest.json

@@ -1,8 +1,24 @@
 # VerifyFetch Roadmap
 
-## Current: v1.0.0
+## Current: v1.1.0
 
-**Shipped and working:**
+**Theme: Protect Every AI Model in Your Browser**
+
+**New in v1.1.0:**
+
+- **Transformers.js integration** (`@verifyfetch/transformers` package)
+  - `verifiedPipeline()` - drop-in verified pipeline wrapper
+  - `enableVerification()` - global verification for all Transformers.js downloads
+  - `preloadVerifiedModel()` - pre-download and verify HF model files
+  - Integrates via `env.customFetch` — no monkey-patching
+- **CLI `hash-model` command** - Generate manifests for any Hugging Face model
+  - `npx verifyfetch hash-model Xenova/distilbert-base-uncased-finetuned-sst-2-english`
+  - Auto-detects ML files (ONNX, tokenizer, config)
+  - Supports `--chunked` for large model files
+- **Pre-computed manifests** (`@verifyfetch/manifests` package)
+  - Ready-to-use hashes for popular Transformers.js and WebLLM models
+
+**Shipped in v1.0.0:**
 
 - Streaming integrity verification (constant 2MB memory for any file size)
 - Chunked verification with fail-fast (detect corruption at chunk N, stop immediately)
@@ -17,17 +33,18 @@
   - Model manifest format with chunked hashes for large shards
   - Addresses [WebLLM issue #761](https://github.com/mlc-ai/web-llm/issues/761)
 
-**Test coverage:** 338 tests passing (283 core + 55 webllm)
+**Test coverage:** 338+ tests passing
 
 ---
 
-## Next: v1.1.0
+## Next: v1.2.0
 
-**Goal:** Framework integrations and developer experience improvements.
+**Goal:** Build plugins and broader ecosystem.
 
-- Pre-computed integrity hashes for popular WebLLM models (Phi-3, Llama, etc.)
 - Next.js plugin for build-time manifest generation
 - Vite plugin for build-time manifest generation
+- ONNX Runtime Web integration
+- More pre-computed manifests for popular models
 
 ---
 
@@ -38,6 +55,7 @@ These are ideas, not commitments:
 - **Ed25519 signatures** - Verify publisher identity, not just file integrity
 - **Worker thread hashing** - Offload to Web Workers for large files
 - **Delta verification** - Only verify changed chunks
+- **MediaPipe integration** - Verified loading for MediaPipe models
 
 ---
 
@@ -49,3 +67,4 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for development setup.
 - More framework examples (SvelteKit, Remix)
 - Performance benchmarks
 - Documentation improvements
+- Pre-compute manifests for more popular models

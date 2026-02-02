@@ -168,6 +168,46 @@ This means verification happens before WebLLM touches the data, and WebLLM benef
 
 WebLLM issue [#761](https://github.com/mlc-ai/web-llm/issues/761) requests integrity verification for model loading. This package provides that today, without waiting for upstream changes.
 
+## Testing
+
+The package includes comprehensive tests covering unit tests, real network integration, and browser-based WebGPU testing.
+
+### Unit & Integration Tests
+
+```bash
+# Run all tests (85 tests)
+pnpm test
+
+# Run with verbose output
+pnpm test -- --run
+```
+
+**Test coverage includes:**
+- Manifest validation and model entry handling (30 tests)
+- Preloader with cache operations (13 tests)
+- VerifiedMLCEngine wrapper (12 tests)
+- Real HuggingFace integration - downloads actual model files (18 tests)
+- Real WebLLM model files - verifies tokenizer, config, ndarray-cache (12 tests)
+
+### Browser Test (WebGPU)
+
+For full end-to-end testing with actual WebLLM inference:
+
+```bash
+# Start the test server
+pnpm test:browser
+
+# Open in Chrome/Edge (WebGPU required)
+# http://localhost:3000/browser-test.html
+```
+
+The browser test:
+1. Verifies WebGPU availability
+2. Downloads real model files from HuggingFace
+3. Computes and verifies SHA-256 hashes in-browser
+4. Tests Cache API storage
+5. (Optional) Loads full 2GB model and runs inference
+
 ## Related
 
 - [verifyfetch](https://www.npmjs.com/package/verifyfetch) - Core library

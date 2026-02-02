@@ -42,18 +42,32 @@ import { createVerifyWorker, registerVerifyWorker } from './worker.js';
 
 // Helper to create mock FetchEvent
 function createMockFetchEvent(url: string, options: { respondWith?: (response: Promise<Response>) => void } = {}): FetchEvent {
-  const respondWith = options.respondWith || vi.fn();
+  const respondWith = options.respondWith || vi.fn().mockImplementation((p: unknown) => {
+    // Suppress unhandled rejections from internal fetch calls (manifest loading, etc.)
+    // Tests only check whether respondWith was called, not the resolved value.
+    if (p && typeof (p as Promise<unknown>).catch === 'function') {
+      (p as Promise<unknown>).catch(() => {});
+    }
+  });
   return {
     request: new Request(url),
     respondWith,
-    waitUntil: vi.fn(),
+    waitUntil: vi.fn().mockImplementation((p: unknown) => {
+      if (p && typeof (p as Promise<unknown>).catch === 'function') {
+        (p as Promise<unknown>).catch(() => {});
+      }
+    }),
   } as unknown as FetchEvent;
 }
 
 // Helper to create mock ExtendableEvent
 function createMockExtendableEvent(): ExtendableEvent {
   return {
-    waitUntil: vi.fn(),
+    waitUntil: vi.fn().mockImplementation((p: unknown) => {
+      if (p && typeof (p as Promise<unknown>).catch === 'function') {
+        (p as Promise<unknown>).catch(() => {});
+      }
+    }),
   } as unknown as ExtendableEvent;
 }
 

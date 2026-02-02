@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "models": {
+    "Xenova/all-MiniLM-L6-v2": {
+      "baseUrl": "https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/",
+      "files": {}
+    }
+  },
+  "_note": "Run 'npx verifyfetch hash-model Xenova/all-MiniLM-L6-v2 --out packages/manifests/transformers/Xenova--all-MiniLM-L6-v2.json' to populate with real hashes"
+}

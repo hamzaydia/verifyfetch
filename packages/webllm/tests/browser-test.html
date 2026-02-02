@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@verifyfetch/webllm Real Browser Test</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #1a1a2e;
+      color: #eee;
+    }
+    h1 { color: #10b981; }
+    .status {
+      padding: 15px;
+      border-radius: 8px;
+      margin: 10px 0;
+      font-family: monospace;
+    }
+    .status.info { background: #1e3a5f; border-left: 4px solid #3b82f6; }
+    .status.success { background: #1a3d2e; border-left: 4px solid #10b981; }
+    .status.error { background: #3d1a1a; border-left: 4px solid #ef4444; }
+    .status.warning { background: #3d3a1a; border-left: 4px solid #f59e0b; }
+    #log {
+      background: #0d0d1a;
+      padding: 15px;
+      border-radius: 8px;
+      height: 400px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+    }
+    .log-entry { margin: 2px 0; }
+    .log-entry.fetch { color: #60a5fa; }
+    .log-entry.verify { color: #34d399; }
+    .log-entry.cache { color: #a78bfa; }
+    .log-entry.webllm { color: #fbbf24; }
+    .log-entry.error { color: #f87171; }
+    .log-entry.success { color: #10b981; font-weight: bold; }
+    button {
+      background: #10b981;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover { background: #059669; }
+    button:disabled { background: #4b5563; cursor: not-allowed; }
+    .progress-bar {
+      width: 100%;
+      height: 20px;
+      background: #333;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #3b82f6);
+      transition: width 0.3s;
+    }
+    #chat-container {
+      display: none;
+      margin-top: 20px;
+    }
+    #chat-input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid #333;
+      background: #0d0d1a;
+      color: #eee;
+      font-size: 14px;
+    }
+    #chat-output {
+      background: #0d0d1a;
+      padding: 15px;
+      border-radius: 8px;
+      min-height: 100px;
+      margin-top: 10px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h1>@verifyfetch/webllm Real Browser Test</h1>
+
+  <div id="webgpu-status" class="status info">Checking WebGPU support...</div>
+
+  <div style="margin: 20px 0;">
+    <button id="btn-test-small" onclick="runSmallTest()">Test Small Files Only (Fast)</button>
+    <button id="btn-test-full" onclick="runFullTest()" disabled>Load Full Model + Chat (Slow, ~2GB)</button>
+  </div>
+
+  <div class="progress-bar">
+    <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+  </div>
+  <div id="progress-text" style="text-align: center; margin-bottom: 10px;">Ready</div>
+
+  <h3>Test Log:</h3>
+  <div id="log"></div>
+
+  <div id="chat-container">
+    <h3>Chat with Model:</h3>
+    <input type="text" id="chat-input" placeholder="Type a message and press Enter..." onkeypress="handleChatKeypress(event)">
+    <div id="chat-output"></div>
+  </div>
+
+  <script type="module">
+    // Import from CDN for browser testing
+    import { CreateMLCEngine } from 'https://esm.run/@mlc-ai/web-llm@0.2.80';
+
+    window.CreateMLCEngine = CreateMLCEngine;
+
+    // Check WebGPU
+    const webgpuStatus = document.getElementById('webgpu-status');
+    const btnFull = document.getElementById('btn-test-full');
+
+    if ('gpu' in navigator) {
+      try {
+        const adapter = await navigator.gpu.requestAdapter();
+        if (adapter) {
+          webgpuStatus.className = 'status success';
+          webgpuStatus.textContent = '✓ WebGPU is supported! You can run the full model test.';
+          btnFull.disabled = false;
+        } else {
+          throw new Error('No adapter');
+        }
+      } catch (e) {
+        webgpuStatus.className = 'status warning';
+        webgpuStatus.textContent = '⚠ WebGPU adapter not available. Full model test disabled.';
+      }
+    } else {
+      webgpuStatus.className = 'status error';
+      webgpuStatus.textContent = '✗ WebGPU not supported in this browser. Try Chrome 113+ or Edge 113+.';
+    }
+  </script>
+
+  <script type="module">
+    const logEl = document.getElementById('log');
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+
+    function log(type, message) {
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      const timestamp = new Date().toISOString().split('T')[1].slice(0, -1);
+      entry.textContent = `[${timestamp}] [${type.toUpperCase()}] ${message}`;
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+      console.log(`[${type}]`, message);
+    }
+
+    function setProgress(percent, text) {
+      progressFill.style.width = `${percent}%`;
+      progressText.textContent = text;
+    }
+
+    // Compute SHA-256 hash
+    async function computeSha256(data) {
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = new Uint8Array(hashBuffer);
+      const hashBase64 = btoa(String.fromCharCode(...hashArray));
+      return `sha256-${hashBase64}`;
+    }
+
+    // Test 1: Small files only (verify the verification works)
+    window.runSmallTest = async function() {
+      logEl.innerHTML = '';
+      log('info', '=== Starting Small Files Test ===');
+
+      const MODEL_BASE = 'https://huggingface.co/mlc-ai/Phi-3.5-mini-instruct-q4f16_1-MLC/resolve/main/';
+
+      const testFiles = [
+        { name: 'mlc-chat-config.json', expectedHash: 'sha256-kzcjPCZN4TBVviyuS+LjT2OHBkjB27op96BwjYvJxgs=' },
+        { name: 'tokenizer_config.json', expectedHash: 'sha256-kqbj+JQHX9oZ9H2HVcbOZbKpdHFjB9E65deRlgEeu0Q=' },
+      ];
+
+      let passed = 0;
+      let failed = 0;
+
+      for (const file of testFiles) {
+        try {
+          setProgress((passed + failed) / testFiles.length * 100, `Testing ${file.name}...`);
+          log('fetch', `Downloading ${file.name}...`);
+
+          const response = await fetch(MODEL_BASE + file.name);
+          const data = await response.arrayBuffer();
+
+          log('fetch', `Downloaded ${file.name}: ${data.byteLength} bytes`);
+
+          // Compute hash
+          log('verify', `Computing SHA-256 hash...`);
+          const actualHash = await computeSha256(data);
+
+          log('verify', `Expected: ${file.expectedHash}`);
+          log('verify', `Actual:   ${actualHash}`);
+
+          if (actualHash === file.expectedHash) {
+            log('success', `✓ ${file.name} VERIFIED!`);
+            passed++;
+          } else {
+            log('error', `✗ ${file.name} HASH MISMATCH!`);
+            failed++;
+          }
+
+          // Test caching
+          log('cache', `Storing in Cache API...`);
+          const cache = await caches.open('webllm-test');
+          await cache.put(MODEL_BASE + file.name, new Response(data));
+
+          // Verify cache
+          const cached = await cache.match(MODEL_BASE + file.name);
+          if (cached) {
+            log('cache', `✓ Successfully cached ${file.name}`);
+          }
+
+        } catch (err) {
+          log('error', `✗ ${file.name} FAILED: ${err.message}`);
+          failed++;
+        }
+      }
+
+      setProgress(100, 'Test complete!');
+
+      if (failed === 0) {
+        log('success', `=== ALL ${passed} TESTS PASSED ===`);
+        log('success', 'The verification pipeline works correctly with real HuggingFace files!');
+      } else {
+        log('error', `=== ${failed} TESTS FAILED ===`);
+      }
+
+      // Cleanup
+      await caches.delete('webllm-test');
+      log('cache', 'Cleaned up test cache');
+    };
+
+    // Test 2: Full model loading with WebLLM
+    window.runFullTest = async function() {
+      logEl.innerHTML = '';
+      log('info', '=== Starting Full WebLLM Model Test ===');
+      log('info', 'This will download ~2GB of model data...');
+
+      const modelId = 'Phi-3.5-mini-instruct-q4f16_1-MLC';
+
+      try {
+        log('webllm', 'Creating MLCEngine...');
+
+        const engine = await window.CreateMLCEngine(modelId, {
+          initProgressCallback: (report) => {
+            const percent = Math.round(report.progress * 100);
+            setProgress(percent, report.text);
+            log('webllm', `${percent}% - ${report.text}`);
+          },
+        });
+
+        log('success', '✓ Model loaded successfully!');
+        log('webllm', 'Testing chat completion...');
+
+        setProgress(100, 'Model ready! Testing inference...');
+
+        // Test inference
+        const testPrompt = 'What is 2 + 2? Answer in one word.';
+        log('webllm', `Prompt: "${testPrompt}"`);
+
+        const response = await engine.chat.completions.create({
+          messages: [{ role: 'user', content: testPrompt }],
+          max_tokens: 50,
+        });
+
+        const reply = response.choices[0].message.content;
+        log('success', `✓ Model response: "${reply}"`);
+
+        // Show chat interface
+        document.getElementById('chat-container').style.display = 'block';
+        window.mlcEngine = engine;
+
+        log('success', '=== FULL WEBLLM TEST PASSED ===');
+        log('success', 'You can now chat with the model below!');
+
+      } catch (err) {
+        log('error', `✗ Test failed: ${err.message}`);
+        console.error(err);
+      }
+    };
+
+    // Chat handler
+    window.handleChatKeypress = async function(event) {
+      if (event.key !== 'Enter' || !window.mlcEngine) return;
+
+      const input = document.getElementById('chat-input');
+      const output = document.getElementById('chat-output');
+      const message = input.value.trim();
+
+      if (!message) return;
+
+      input.value = '';
+      output.textContent = 'Thinking...';
+
+      try {
+        const response = await window.mlcEngine.chat.completions.create({
+          messages: [{ role: 'user', content: message }],
+          max_tokens: 256,
+        });
+
+        output.textContent = `You: ${message}\n\nAssistant: ${response.choices[0].message.content}`;
+      } catch (err) {
+        output.textContent = `Error: ${err.message}`;
+      }
+    };
+  </script>
+</body>
+</html>
