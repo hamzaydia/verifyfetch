@@ -5,7 +5,7 @@
 <h1 align="center">VerifyFetch</h1>
 
 <p align="center">
-  <strong>Download large files. Verify them. Resume when it fails.</strong>
+  <strong>Your user downloads a 4GB AI model. It fails at 3.8GB.<br />VerifyFetch resumes from 3.8GB and verifies every byte.</strong>
 </p>
 
 <p align="center">
@@ -34,120 +34,32 @@ const response = await verifyFetch('/model.bin', {
 
 ---
 
-## Why VerifyFetch?
+## Why?
 
-### The Problem
+Loading large files in the browser is broken:
 
-Loading large files in the browser is painful:
+- **Memory explosion** — `crypto.subtle.digest()` buffers the entire file. 4GB model = 4GB RAM = crash.
+- **No resume** — Network drops at 3.8GB? Start over from zero.
+- **Silent corruption** — CDN serves bad bytes? You won't know until inference gives garbage.
+- **Supply chain attacks** — [polyfill.io](https://sansec.io/research/polyfill-supply-chain-attack) compromised 100K+ sites.
 
-1. **Memory explosion** - `crypto.subtle.digest()` buffers the entire file. 4GB AI model = 4GB+ RAM = browser crash.
-2. **No fail-fast** - Download 4GB, find corruption at the end, start over.
-3. **CDN compromises** - [polyfill.io](https://sansec.io/research/polyfill-supply-chain-attack) affected 100K+ sites.
-
-### The Solution
-
-| Feature | Native `fetch` | VerifyFetch |
-|---------|---------------|-------------|
-| Basic SRI verification | Yes | Yes |
-| **Constant memory** | No (buffers all) | Yes (streaming WASM) |
-| **Fail-fast on corruption** | No | Yes (chunked verification) |
-| **Progress callbacks** | No | Yes |
-| **Multi-CDN failover** | No | Yes |
-| **Service Worker mode** | No | Yes |
+VerifyFetch fixes all of these: **streaming verification in constant memory, resumable downloads, fail-fast corruption detection.**
 
 ---
 
-## Quick Start
-
-### Option 1: Direct Usage
-
-```typescript
-import { verifyFetch } from 'verifyfetch';
-
-const response = await verifyFetch('/engine.wasm', {
-  sri: 'sha256-uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek='
-});
-```
-
-### Option 2: Service Worker Mode (Zero-Code)
-
-Add verification to **every fetch** without changing your app code:
-
-```typescript
-// sw.js (your Service Worker)
-import { createVerifyWorker } from 'verifyfetch/worker';
-
-createVerifyWorker({
-  manifestUrl: '/vf.manifest.json',
-  include: ['*.wasm', '*.bin', '*.onnx', '*.safetensors'],
-  onFail: 'block'
-});
-```
-
-```typescript
-// app.js - No changes needed!
-const model = await fetch('/model.bin');  // Automatically verified!
-```
-
-### Option 3: Manifest Mode
-
-```typescript
-import { createVerifyFetcher } from 'verifyfetch';
-
-const vf = await createVerifyFetcher({
-  manifestUrl: '/vf.manifest.json'
-});
-
-const wasm = await vf.arrayBuffer('/engine.wasm');  // Hash looked up automatically
-```
-
----
-
-## For AI Models (WebLLM, Transformers.js, ONNX)
-
-Loading multi-GB models in the browser? This is what VerifyFetch was built for.
-
-**The pain:**
-- Download 4GB model, network drops at 3.8GB, start over
-- Native `crypto.subtle` needs 4GB RAM just to verify a 4GB file
-- No way to detect corruption until after downloading everything
-
-**The fix:**
-
-```typescript
-import { verifyFetchResumable } from 'verifyfetch';
-
-const model = await verifyFetchResumable('/phi-3-mini.gguf', {
-  chunked: manifest.artifacts['/phi-3-mini.gguf'].chunked,
-  persist: true,  // Survives page reload
-  onProgress: ({ percent, resumed }) => {
-    console.log(`${percent}%${resumed ? ' (resumed)' : ''}`);
-  }
-});
-```
-
-- **Memory**: 2MB constant, not 4GB
-- **Resume**: Network fails at 80%? Resume from 80%
-- **Fail-fast**: Detect corruption immediately, not after downloading everything
-
-> WebLLM is considering native integrity support ([#761](https://github.com/mlc-ai/web-llm/issues/761)). VerifyFetch works today.
-
-### Transformers.js Integration (NEW in v1.1)
-
-Drop-in verified model loading for [Transformers.js](https://huggingface.co/docs/transformers.js):
+## Use with Transformers.js
 
 ```bash
 npm install @verifyfetch/transformers @huggingface/transformers
 ```
 
-**Step 1:** Generate a manifest for your model:
+**1. Generate hashes for your model:**
 
 ```bash
-npx verifyfetch hash-model Xenova/distilbert-base-uncased-finetuned-sst-2-english
-# Output: ./models.vf.manifest.json — place in your public/ directory
+npx @verifyfetch/cli hash-model Xenova/distilbert-base-uncased-finetuned-sst-2-english
 ```
 
-**Step 2:** Use `verifiedPipeline` (recommended):
+**2. Use it:**
 
 ```typescript
 import { verifiedPipeline } from '@verifyfetch/transformers';
@@ -162,194 +74,95 @@ const result = await classifier('I love this!');
 // [{ label: 'POSITIVE', score: 0.99 }]
 ```
 
-Or verify **all** Transformers.js downloads globally with one line:
-
-```typescript
-import { enableVerification } from '@verifyfetch/transformers';
-import { pipeline } from '@huggingface/transformers';
-
-await enableVerification({ manifestUrl: '/models.vf.manifest.json' });
-
-// Now every pipeline() call is automatically verified
-const classifier = await pipeline('sentiment-analysis', 'Xenova/distilbert-base-uncased-finetuned-sst-2-english');
-```
+Every file is verified and resumable. If the connection drops, it picks up where it left off.
 
 ---
 
-## Generate Hashes
+## Use with WebLLM
 
 ```bash
-# Generate SHA-256 hashes
-npx verifyfetch sign ./public/*.wasm ./models/*.bin
+npm install @verifyfetch/webllm @mlc-ai/web-llm
+```
 
-# With chunked verification (for large files - enables fail-fast)
-npx verifyfetch sign --chunked --chunk-size 1048576 ./large-model.bin
+```typescript
+import { createVerifiedMLCEngine } from '@verifyfetch/webllm';
 
-# Output: vf.manifest.json
+const engine = await createVerifiedMLCEngine('Phi-3-mini-4k-instruct-q4f16_1-MLC', {
+  manifestUrl: '/models.vf.manifest.json',
+  onProgress: ({ file, percent, resumed }) => {
+    console.log(`${file}: ${percent}%${resumed ? ' (resumed)' : ''}`);
+  }
+});
 ```
 
 ---
 
-## Features
-
-### Streaming Verification
-
-For large files, process chunks as they download with constant memory:
-
-```typescript
-import { verifyFetchStream } from 'verifyfetch';
-
-const { stream, verified } = await verifyFetchStream('/model.bin', {
-  sri: 'sha256-...'
-});
-
-// Process chunks immediately - constant memory usage
-for await (const chunk of stream) {
-  await uploadToGPU(chunk);
-}
-
-// Verification completes after stream ends
-await verified;  // Throws IntegrityError if hash doesn't match
-```
-
-### Resumable Downloads (NEW in v1.0)
-
-**The killer feature:** Download fails at 3.8GB of 4GB? Resume from 3.8GB, not zero.
+## Use with any file
 
 ```typescript
 import { verifyFetchResumable } from 'verifyfetch';
 
-// First attempt - fails at 80%
-const result = await verifyFetchResumable('/model.safetensors', {
-  chunked: manifest.artifacts['/model.safetensors'].chunked,
-  onProgress: ({ chunksVerified, totalChunks, resumed }) => {
-    console.log(`${chunksVerified}/${totalChunks} chunks${resumed ? ' (resumed)' : ''}`);
-  }
-});
-
-// Page reload or network failure...
-
-// Second attempt - automatically resumes from last verified chunk
-const result2 = await verifyFetchResumable('/model.safetensors', {
-  chunked: manifest.artifacts['/model.safetensors'].chunked,
-  onResume: (state) => {
-    console.log(`Resuming from chunk ${state.verifiedChunks}/${totalChunks}`);
+const model = await verifyFetchResumable('/phi-3-mini.gguf', {
+  chunked: manifest.artifacts['/phi-3-mini.gguf'].chunked,
+  persist: true,
+  onProgress: ({ percent, resumed }) => {
+    console.log(`${percent}%${resumed ? ' (resumed)' : ''}`);
   }
 });
 ```
 
-**How it works:**
-1. Each chunk is verified and stored in IndexedDB as it downloads
-2. On failure/reload, loads existing verified chunks from storage
-3. Uses HTTP Range requests to fetch only remaining chunks
-4. Clean up storage automatically on completion
-
-### Chunked Verification (Fail-Fast)
-
-Stop downloading immediately if corruption is detected:
+Or use a **Service Worker** to verify every fetch without changing any code:
 
 ```typescript
-import { createChunkedVerifier, verifyFetchStream } from 'verifyfetch';
+// sw.js
+import { createVerifyWorker } from 'verifyfetch/worker';
 
-// Generate manifest with chunked hashes
-// npx verifyfetch sign --chunked ./large-model.bin
-
-// Verify chunk-by-chunk as data arrives
-const verifier = createChunkedVerifier(manifest.artifacts['/model.bin'].chunked);
-
-const { stream } = await verifyFetchStream('/model.bin', { sri: chunked.root });
-
-for await (const chunk of stream) {
-  const result = await verifier.verifyNextChunk(chunk);
-
-  if (!result.valid) {
-    // Don't download 4GB if byte 0 is wrong!
-    throw new Error(`Chunk ${result.index} corrupt - stopping immediately`);
-  }
-
-  await processChunk(chunk);
-}
-```
-
-**How it works:** Each chunk is hashed independently. If chunk 5 of 4000 is corrupt, you find out immediately - not after downloading the other 3995 chunks.
-
-### Multi-CDN Failover
-
-Automatically try backup sources if one fails:
-
-```typescript
-import { verifyFetchFromSources } from 'verifyfetch';
-
-const response = await verifyFetchFromSources(
-  'sha256-abc123...',
-  '/model.bin',
-  {
-    sources: [
-      'https://cdn1.example.com',
-      'https://cdn2.example.com',
-      'https://backup.example.com'
-    ],
-    strategy: 'race'  // 'sequential' | 'race' | 'fastest'
-  }
-);
-```
-
-### Progress Tracking
-
-```typescript
-await verifyFetch('/large-model.bin', {
-  sri: 'sha256-...',
-  onProgress: (bytes, total) => {
-    const percent = total ? Math.round(bytes / total * 100) : 0;
-    console.log(`Downloading: ${percent}%`);
-  }
+createVerifyWorker({
+  manifestUrl: '/vf.manifest.json',
+  include: ['*.wasm', '*.bin', '*.onnx', '*.safetensors'],
 });
 ```
 
-### Fallback URLs
-
 ```typescript
-await verifyFetch('/main.wasm', {
-  sri: 'sha256-...',
-  onFail: { fallbackUrl: '/backup.wasm' }
-});
+// app.js — no changes needed
+const model = await fetch('/model.bin');  // automatically verified
 ```
 
 ---
 
-## CLI Commands
+## How it works
 
-```bash
-# Generate SRI hashes
-npx verifyfetch sign <files...>
-
-# Generate with chunked hashes (for large files)
-npx verifyfetch sign --chunked --chunk-size 1048576 <files...>
-
-# Hash a Hugging Face model (NEW in v1.1)
-npx verifyfetch hash-model Xenova/distilbert-base-uncased-finetuned-sst-2-english
-
-# Verify files match manifest (for CI)
-npx verifyfetch enforce --manifest ./vf.manifest.json
-
-# Add to Next.js project
-npx verifyfetch init --next
-```
+1. You generate SHA-256 hashes for your files (CLI does this in one command)
+2. Hashes are stored in a manifest JSON file you ship with your app
+3. VerifyFetch downloads files in chunks, verifying each one as it arrives
+4. If a chunk is corrupt, it stops immediately — no wasting bandwidth
+5. If the connection drops, it resumes from the last verified chunk via IndexedDB
+6. Memory stays constant (~2MB) regardless of file size
 
 ---
 
-## API Reference
+## Packages
+
+| Package | Description |
+|---------|-------------|
+| [`verifyfetch`](https://www.npmjs.com/package/verifyfetch) | Core library — verified fetch, streaming, resumable downloads |
+| [`@verifyfetch/transformers`](https://www.npmjs.com/package/@verifyfetch/transformers) | Drop-in Transformers.js integration |
+| [`@verifyfetch/webllm`](https://www.npmjs.com/package/@verifyfetch/webllm) | Drop-in WebLLM integration |
+| [`@verifyfetch/cli`](https://www.npmjs.com/package/@verifyfetch/cli) | CLI to generate hashes and manifests |
+| [`@verifyfetch/manifests`](https://www.npmjs.com/package/@verifyfetch/manifests) | Pre-computed hashes for popular models |
+
+---
+
+<details>
+<summary><strong>Full API Reference</strong></summary>
 
 ### `verifyFetch(url, options)`
 
-Basic verified fetch.
-
 ```typescript
 const response = await verifyFetch('/file.bin', {
-  sri: 'sha256-...',              // Required: SRI hash
+  sri: 'sha256-...',
   onFail: 'block',                // 'block' | 'warn' | { fallbackUrl }
   onProgress: (bytes, total) => {},
-  fetchImpl: fetch                // Custom fetch implementation
 });
 ```
 
@@ -358,16 +171,27 @@ const response = await verifyFetch('/file.bin', {
 Streaming verification with constant memory.
 
 ```typescript
-const { stream, verified, totalBytes } = await verifyFetchStream('/file.bin', {
+const { stream, verified } = await verifyFetchStream('/file.bin', {
   sri: 'sha256-...',
-  onProgress: (bytes, total) => {}
 });
 
 for await (const chunk of stream) {
-  // Process immediately
+  await processChunk(chunk);
 }
 
-await verified;  // Throws if verification fails
+await verified;  // throws if verification fails
+```
+
+### `verifyFetchResumable(url, options)`
+
+Resumable downloads with chunked verification via IndexedDB.
+
+```typescript
+const result = await verifyFetchResumable('/model.bin', {
+  chunked: manifest.artifacts['/model.bin'].chunked,
+  persist: true,
+  onProgress: ({ bytesVerified, totalBytes, resumed, speed, eta }) => {},
+});
 ```
 
 ### `verifyFetchFromSources(sri, path, options)`
@@ -375,265 +199,39 @@ await verified;  // Throws if verification fails
 Multi-CDN failover.
 
 ```typescript
-const response = await verifyFetchFromSources(
-  'sha256-...',
-  '/file.bin',
-  {
-    sources: ['https://cdn1.com', 'https://cdn2.com'],
-    strategy: 'sequential',       // 'sequential' | 'race' | 'fastest'
-    timeout: 30000,
-    onSourceError: (source, error) => {}
-  }
-);
-```
-
-### `createVerifyFetcher(options)`
-
-Manifest-aware fetcher.
-
-```typescript
-const vf = await createVerifyFetcher({
-  manifestUrl: '/vf.manifest.json',
-  baseUrl: 'https://cdn.example.com'  // Optional
+const response = await verifyFetchFromSources('sha256-...', '/file.bin', {
+  sources: ['https://cdn1.com', 'https://cdn2.com'],
+  strategy: 'race',  // 'sequential' | 'race' | 'fastest'
 });
-
-await vf.arrayBuffer('/file.wasm');
-await vf.json('/config.json');
-await vf.text('/data.txt');
 ```
 
 ### `createVerifyWorker(options)` (Service Worker)
 
-Zero-code verification via Service Worker.
-
 ```typescript
-// In sw.js
-import { createVerifyWorker } from 'verifyfetch/worker';
-
 createVerifyWorker({
   manifestUrl: '/vf.manifest.json',
   include: ['*.wasm', '*.bin', '*.onnx'],
-  exclude: ['*.json'],
-  onFail: 'block',                // 'block' | 'warn' | 'passthrough'
-  cacheVerified: true,
-  cacheName: 'verifyfetch-verified',
-  debug: false
+  onFail: 'block',
 });
 ```
 
-### `verifyFetchResumable(url, options)` (NEW in v1.0)
+### CLI
 
-Resumable downloads with chunked verification. Persists progress to IndexedDB.
-
-```typescript
-const result = await verifyFetchResumable('/model.bin', {
-  chunked: manifest.artifacts['/model.bin'].chunked, // Required
-  persist: true,                    // Store progress in IndexedDB (default: true)
-  onProgress: ({ bytesVerified, totalBytes, chunksVerified, totalChunks, resumed, speed, eta }) => {},
-  onResume: (state) => {},          // Called when resuming
-  chunkTimeout: 30000               // Timeout per chunk request
-});
-
-// result: { data: ArrayBuffer, resumed: boolean, chunksResumed: number, totalChunks: number }
+```bash
+npx verifyfetch sign <files...>                    # Generate SRI hashes
+npx verifyfetch sign --chunked <files...>          # With chunk hashes
+npx verifyfetch hash-model <model-id>              # Hash a HuggingFace model
+npx verifyfetch enforce --manifest vf.manifest.json # Verify in CI
 ```
-
-**Utility functions:**
-
-```typescript
-import { canResume, getDownloadProgress, cancelDownload } from 'verifyfetch';
-
-// Check if a download can be resumed
-const resumable = await canResume('/model.bin');
-
-// Get progress of paused download
-const progress = await getDownloadProgress('/model.bin');
-// { chunksVerified, totalChunks, bytesVerified, totalBytes, startedAt, lastUpdated }
-
-// Cancel and clear a download
-await cancelDownload('/model.bin');
-```
-
-### Chunked Verification Functions
-
-```typescript
-import { generateChunkedHashes, createChunkedVerifier, verifyChunk } from 'verifyfetch';
-
-// Generate chunk hashes from data
-const chunked = await generateChunkedHashes(data, 1048576); // 1MB chunks
-// { root: 'sha256-...', chunkSize: 1048576, hashes: ['sha256-...', ...] }
-
-// Create verifier for streaming
-const verifier = createChunkedVerifier(chunked);
-const result = await verifier.verifyNextChunk(chunk);
-// { valid: boolean, index: number }
-
-// Verify single chunk
-const isValid = await verifyChunk(chunk, 'sha256-...');
-```
-
----
-
-## Manifest Format
-
-### v1 (Simple)
-
-```json
-{
-  "version": 1,
-  "base": "/",
-  "artifacts": {
-    "/engine.wasm": {
-      "sri": "sha256-uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek="
-    }
-  }
-}
-```
-
-### v2 (With Chunked Verification)
-
-```json
-{
-  "version": 2,
-  "base": "/",
-  "artifacts": {
-    "/large-model.bin": {
-      "sri": "sha256-fullFileHash...",
-      "size": 4294967296,
-      "chunked": {
-        "root": "sha256-rootHash...",
-        "chunkSize": 1048576,
-        "hashes": ["sha256-chunk0...", "sha256-chunk1...", "..."]
-      }
-    }
-  }
-}
-```
-
----
-
-## Examples
-
-See [`examples/`](./examples) for working code:
-
-- **[node-cli](./examples/node-cli/)** — Node.js usage
-- **[next-app](./examples/next-app/)** — Next.js + React hook
-- **[vite-app](./examples/vite-app/)** — Vite + TypeScript
-
----
-
-<details>
-<summary><strong>Troubleshooting</strong></summary>
-
-### IntegrityError: Hash mismatch
-
-**Cause:** File content doesn't match expected SRI hash.
-
-**Solutions:**
-1. **File changed legitimately** — Regenerate:
-   ```bash
-   npx verifyfetch sign ./path/to/file.bin
-   ```
-2. **CDN serving stale cache** — Clear CDN cache or use versioned URLs
-3. **Potential attack** — Investigate immediately
-
-### WASM not loading
-
-**Symptoms:** Console shows "Using SubtleCrypto fallback"
-
-**Solutions:**
-1. Serve WASM with correct MIME type (`application/wasm`)
-2. Check CSP headers allow `wasm-eval`
-
-**Check status:**
-```typescript
-import { isUsingWasm } from 'verifyfetch';
-
-if (!await isUsingWasm()) {
-  console.warn('WASM not available');
-}
-```
-
-### Memory issues with large files
-
-Use streaming instead of buffered:
-
-```typescript
-// Instead of verifyFetch (buffers entire file)
-const { stream, verified } = await verifyFetchStream('/large.bin', {
-  sri: 'sha256-...'
-});
-
-for await (const chunk of stream) {
-  // Process incrementally
-}
-await verified;
-```
-
-### Service Worker not intercepting
-
-1. Ensure manifest URL is accessible
-2. Check `include` patterns match your files
-3. Enable `debug: true` for logging
 
 </details>
 
 <details>
 <summary><strong>Security Model</strong></summary>
 
-VerifyFetch uses the same trust model as browser SRI:
+**Protects against:** CDN compromise, MITM attacks, accidental corruption, supply chain attacks.
 
-**Protects against:**
-- CDN/storage compromise
-- MITM attacks
-- Accidental file corruption
-
-**Does NOT protect against:**
-- Compromised build (you ship wrong hash)
-- Malicious insider (wrong hash intentional)
-
-For build protection, use `verifyfetch enforce` in CI.
-
-</details>
-
-<details>
-<summary><strong>Technical Notes</strong></summary>
-
-### About "Chunked Verification"
-
-The chunked verification feature hashes each chunk independently. This is simpler than a true Merkle tree (no hierarchical hashing, no proof-of-inclusion). The benefit is fail-fast: detect corruption at chunk N without downloading chunks N+1 through END.
-
-The "root" hash is computed by concatenating all chunk hashes and hashing the result. This verifies the chunk list wasn't modified but doesn't provide Merkle proofs.
-
-### Memory Usage
-
-| Mode | Memory |
-|------|--------|
-| Native `crypto.subtle.digest()` | ~file size |
-| `verifyFetch()` | ~file size (buffered) |
-| `verifyFetchStream()` | ~2MB constant |
-| Chunked verification | ~chunkSize + overhead |
-
-</details>
-
-<details>
-<summary><strong>Limitations</strong></summary>
-
-**What VerifyFetch does NOT do:**
-
-- **Build verification** - If your build process is compromised, you'll ship wrong hashes. Use `verifyfetch enforce` in CI.
-- **Key management** - No signature verification (yet). You trust whoever generates the manifest.
-- **Offline-first** - Manifests are fetched on load. No offline cache (yet).
-
-**Memory caveat:**
-
-- **WASM required for true streaming** - Without WASM, SubtleCrypto buffers the entire file in memory. A warning is shown at 50MB+. WASM loads automatically if available.
-
-**Browser requirements:**
-
-- Crypto: `crypto.subtle` (all modern browsers)
-- Streaming: `ReadableStream` (all modern browsers)
-- Resumable: `IndexedDB` (all modern browsers)
-- WASM hashing: `WebAssembly` (optional, falls back to SubtleCrypto)
+**Does NOT protect against:** Compromised build pipeline (you ship wrong hashes). Use `verifyfetch enforce` in CI for that.
 
 </details>
 
@@ -644,22 +242,17 @@ The "root" hash is computed by concatenating all chunk hashes and hashing the re
 pnpm install
 pnpm build:wasm   # Requires Rust
 pnpm build
-pnpm test
+pnpm test         # 437 tests
 ```
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 </details>
 
 ---
 
 <p align="center">
-  If this helps protect your app, consider giving it a <a href="https://github.com/hamzaydia/verifyfetch">star</a>
-</p>
-
-<p align="center">
-  <a href="https://verifyfetch.com">Docs</a> •
-  <a href="https://github.com/hamzaydia/verifyfetch">GitHub</a>
+  <a href="https://verifyfetch.com">Docs</a> &middot;
+  <a href="https://github.com/hamzaydia/verifyfetch">GitHub</a> &middot;
+  <a href="https://github.com/hamzaydia/verifyfetch/releases">Changelog</a>
 </p>
 
 <p align="center">
