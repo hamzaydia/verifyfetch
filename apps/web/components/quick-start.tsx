@@ -10,29 +10,31 @@ const steps = [
     number: '1',
     title: 'Install',
     type: 'terminal',
-    code: 'npm install verifyfetch',
+    code: 'npm install @verifyfetch/transformers @huggingface/transformers',
   },
   {
     number: '2',
-    title: 'Generate hashes',
+    title: 'Generate a model manifest',
     type: 'terminal',
-    code: 'npx verifyfetch sign ./public/*.wasm ./models/*.bin',
+    code: 'npx @verifyfetch/cli hash-model Xenova/distilbert-base-uncased-finetuned-sst-2-english',
   },
   {
     number: '3',
-    title: 'Verify in your app',
+    title: 'Use it in your app',
     type: 'code',
-    code: `import { verifyFetch } from 'verifyfetch';
+    code: `import { verifiedPipeline } from '@verifyfetch/transformers';
 
-const res = await verifyFetch('/engine.wasm', {
-  sri: 'sha256-...'
-});`,
+const classifier = await verifiedPipeline(
+  'sentiment-analysis',
+  'Xenova/distilbert-base-uncased-finetuned-sst-2-english',
+  { manifestUrl: '/models.vf.manifest.json' }
+);`,
   },
   {
     number: '4',
     title: 'Enforce in CI',
     type: 'terminal',
-    code: 'npx verifyfetch enforce --manifest ./vf.manifest.json',
+    code: 'npx @verifyfetch/cli enforce --manifest ./models.vf.manifest.json',
   },
 ];
 
@@ -44,7 +46,7 @@ function highlightTerminal(code: string): React.ReactNode[] {
 
     if (i === 0 && (part === 'npx' || part === 'npm')) {
       className = 'text-emerald-400';
-    } else if (part === 'verifyfetch' || part === 'install' || part === 'sign' || part === 'enforce') {
+    } else if (part === '@verifyfetch/cli' || part === '@verifyfetch/transformers' || part === '@huggingface/transformers' || part === 'verifyfetch' || part === 'install' || part === 'sign' || part === 'enforce' || part === 'hash-model') {
       className = 'text-blue-400';
     } else if (part.startsWith('--')) {
       className = 'text-yellow-300';
@@ -88,7 +90,7 @@ function highlightCode(code: string): React.ReactNode[] {
       }
 
       // Functions
-      const funcMatch = remaining.match(/^(verifyFetch|verifyFetchStream)\b/);
+      const funcMatch = remaining.match(/^(verifyFetch|verifyFetchStream|verifiedPipeline|classifier)\b/);
       if (funcMatch) {
         segments.push(<span key={keyCounter++} className="text-blue-400">{funcMatch[1]}</span>);
         remaining = remaining.slice(funcMatch[1].length);

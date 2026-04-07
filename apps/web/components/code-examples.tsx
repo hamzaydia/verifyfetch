@@ -21,21 +21,60 @@ const response = await verifyFetch('/model.bin', {
 const model = await response.arrayBuffer();`,
   },
   {
-    id: 'streaming',
-    label: 'Streaming',
-    filename: 'stream.ts',
-    code: `import { verifyFetchStream } from 'verifyfetch';
+    id: 'transformers',
+    label: 'Transformers.js',
+    filename: 'sentiment.ts',
+    code: `import { verifiedPipeline } from '@verifyfetch/transformers';
 
-// Process chunks as they download - constant memory
-const { stream, verified } = await verifyFetchStream('/model.bin', {
-  sri: 'sha256-...'
+// Drop-in replacement for pipeline() with verification
+const classifier = await verifiedPipeline(
+  'sentiment-analysis',
+  'Xenova/distilbert-base-uncased-finetuned-sst-2-english',
+  {
+    manifestUrl: '/models.vf.manifest.json',
+    onProgress: ({ file, percent }) =>
+      console.log(\`\${file}: \${percent}%\`)
+  }
+);
+
+const result = await classifier('I love this!');
+// [{ label: 'POSITIVE', score: 0.99 }]`,
+  },
+  {
+    id: 'webllm',
+    label: 'WebLLM',
+    filename: 'chat.ts',
+    code: `import { VerifiedMLCEngine } from '@verifyfetch/webllm';
+
+// Drop-in replacement for MLCEngine with verification
+const engine = new VerifiedMLCEngine({
+  verification: {
+    manifestUrl: '/models/vf.manifest.json'
+  }
 });
 
-for await (const chunk of stream) {
-  await uploadToGPU(chunk); // Process immediately
-}
+await engine.reload('Phi-3-mini-4k-instruct-q4f16_1-MLC');
 
-await verified; // Throws if hash doesn't match`,
+const response = await engine.chat.completions.create({
+  messages: [{ role: 'user', content: 'Hello!' }]
+});`,
+  },
+  {
+    id: 'streaming',
+    label: 'Resumable',
+    filename: 'resume.ts',
+    code: `import { verifyFetchResumable } from 'verifyfetch';
+
+// Download 4GB, fail at 3.8GB, resume from 3.8GB
+const result = await verifyFetchResumable('/model.bin', {
+  chunked: { root: 'sha256-...', chunkSize: 1048576, hashes: [...] },
+  persist: true, // Saves progress to IndexedDB
+  onProgress: ({ percent, resumed, speed, eta }) => {
+    console.log(\`\${percent}% (\${resumed ? 'resumed' : 'fresh'})\`);
+  }
+});
+
+const model = result.data; // Verified ArrayBuffer`,
   },
   {
     id: 'worker',
@@ -54,36 +93,17 @@ createVerifyWorker({
 const model = await fetch('/model.bin'); // Auto-verified!`,
   },
   {
-    id: 'multicdn',
-    label: 'Multi-CDN',
-    filename: 'failover.ts',
-    code: `import { verifyFetchFromSources } from 'verifyfetch';
-
-// Automatic failover across CDNs
-const response = await verifyFetchFromSources(
-  'sha256-abc123...',
-  '/model.bin',
-  {
-    sources: [
-      'https://cdn1.example.com',
-      'https://cdn2.example.com'
-    ],
-    strategy: 'race' // or 'sequential', 'fastest'
-  }
-);`,
-  },
-  {
     id: 'cli',
     label: 'CLI',
     filename: 'terminal',
-    code: `# Generate hashes for your files
-npx verifyfetch sign ./public/*.wasm ./models/*.bin
+    code: `# Generate hashes for any file
+npx @verifyfetch/cli sign ./public/*.wasm ./models/*.bin
 
-# With chunked verification (fail-fast for large files)
-npx verifyfetch sign --chunked ./large-model.bin
+# Generate manifest for a HuggingFace model
+npx @verifyfetch/cli hash-model Xenova/distilbert-base-uncased-finetuned-sst-2-english
 
 # Verify files match their hashes (for CI/CD)
-npx verifyfetch enforce --manifest ./vf.manifest.json`,
+npx @verifyfetch/cli enforce --manifest ./vf.manifest.json`,
   },
 ];
 
@@ -109,7 +129,7 @@ function highlightCode(code: string, isTerminal: boolean = false): React.ReactNo
           {parts.map((part, i) => {
             if (i === 0 && (part === 'npx' || part === 'npm')) {
               return <span key={i} className="text-emerald-400">{part}</span>;
-            } else if (part === 'verifyfetch' || part === 'sign' || part === 'enforce') {
+            } else if (part === '@verifyfetch/cli' || part === 'verifyfetch' || part === 'sign' || part === 'enforce' || part === 'hash-model') {
               return <span key={i}><span className="text-blue-400">{part}</span></span>;
             } else if (part.startsWith('--')) {
               return <span key={i}><span className="text-yellow-300">{part}</span></span>;
@@ -155,7 +175,7 @@ function highlightCode(code: string, isTerminal: boolean = false): React.ReactNo
       }
 
       // Special functions (verifyFetch variants)
-      const funcMatch = remaining.match(/^(verifyFetch|verifyFetchStream|verifyFetchFromSources|createVerifyWorker|fetch|uploadToGPU)\b/);
+      const funcMatch = remaining.match(/^(verifyFetch|verifyFetchResumable|verifyFetchStream|verifyFetchFromSources|createVerifyWorker|verifiedPipeline|VerifiedMLCEngine|fetch|uploadToGPU|classifier|engine|console)\b/);
       if (funcMatch) {
         segments.push(<span key={keyCounter++} className="text-blue-400">{funcMatch[1]}</span>);
         remaining = remaining.slice(funcMatch[1].length);

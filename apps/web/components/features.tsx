@@ -12,13 +12,19 @@ import {
   Shield,
   GitBranch,
   Globe,
+  Sparkles,
 } from 'lucide-react';
 
 const features = [
   {
-    icon: Shield,
-    title: 'Service Worker Mode',
-    description: 'Add one file, verify all fetches. No changes to existing code needed.',
+    icon: Sparkles,
+    title: 'Transformers.js + WebLLM',
+    description: 'Drop-in integrations for HuggingFace Transformers.js and WebLLM. Verified model loading with zero code changes.',
+  },
+  {
+    icon: RefreshCw,
+    title: 'Resumable Downloads',
+    description: 'Network fails at 80%? Resume from 80%. Progress persists to IndexedDB across page reloads.',
   },
   {
     icon: GitBranch,
@@ -26,34 +32,34 @@ const features = [
     description: 'Detect corruption at chunk 5, stop immediately. Don\'t download 3995 more chunks.',
   },
   {
-    icon: Globe,
-    title: 'Multi-CDN Failover',
-    description: 'Try CDN1, CDN2, CDN3. First verified response wins.',
-  },
-  {
     icon: Zap,
     title: 'Streaming Output',
     description: '2MB memory for a 4GB file. Process chunks as they arrive.',
   },
   {
-    icon: RefreshCw,
-    title: 'Resumable Downloads',
-    description: 'Network fails at 80%? Resume from 80%. Progress persists to IndexedDB.',
+    icon: Shield,
+    title: 'Service Worker Mode',
+    description: 'Add one file, verify all fetches. No changes to existing code needed.',
+  },
+  {
+    icon: Globe,
+    title: 'Multi-CDN Failover',
+    description: 'Try CDN1, CDN2, CDN3. First verified response wins.',
   },
   {
     icon: Activity,
     title: 'Progress Tracking',
-    description: 'Bytes loaded, percent complete, ETA. All in one callback.',
+    description: 'Bytes loaded, percent complete, speed, ETA. All in one callback.',
   },
   {
     icon: FileJson,
     title: 'Manifest System',
-    description: 'One JSON file for all your hashes. CLI generates it from your files.',
+    description: 'One JSON file for all your hashes. CLI generates it from your files or HuggingFace models.',
   },
   {
     icon: Terminal,
     title: 'CLI Tools',
-    description: 'npx verifyfetch sign *.wasm - done. Enforce in CI with one command.',
+    description: 'Hash local files with sign, hash HuggingFace models with hash-model, enforce in CI with enforce.',
   },
 ];
 

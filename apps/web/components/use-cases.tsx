@@ -3,31 +3,43 @@
 import { motion } from 'framer-motion';
 import { useInView } from 'framer-motion';
 import { useRef } from 'react';
-import { Box, Brain, FileCode, Binary } from 'lucide-react';
+import { Box, Brain, FileCode, Binary, Sparkles, MessageSquare } from 'lucide-react';
 
 const useCases = [
   {
+    icon: Sparkles,
+    title: 'Transformers.js',
+    description: 'Verified model loading for HuggingFace Transformers.js. Drop-in pipeline() replacement with integrity checks and resumable downloads.',
+    example: 'npm install @verifyfetch/transformers',
+  },
+  {
+    icon: MessageSquare,
+    title: 'WebLLM',
+    description: 'Run LLMs in the browser with verified model weights. Drop-in MLCEngine replacement that catches tampered or corrupted shards.',
+    example: 'npm install @verifyfetch/webllm',
+  },
+  {
     icon: Box,
     title: 'WebAssembly',
-    description: 'Verify .wasm modules before instantiation. Protect your compiled code.',
+    description: 'Verify .wasm modules before instantiation. Protect compiled code from supply chain attacks.',
     example: '/engine.wasm',
   },
   {
     icon: Brain,
-    title: 'AI Models',
-    description: 'Secure multi-GB model downloads. WebLLM, ONNX, transformers.js.',
-    example: '/models/phi-3-mini.bin',
+    title: 'ONNX Runtime',
+    description: 'Secure multi-GB ONNX model downloads. Resumable transfers that survive page reloads and network drops.',
+    example: '/models/model.onnx',
   },
   {
     icon: FileCode,
     title: 'Config Files',
-    description: 'Ensure critical JSON/YAML isn\'t tampered. Settings, schemas, rules.',
+    description: 'Ensure critical JSON and YAML files are not tampered with. Verify settings, schemas, and rules.',
     example: '/config/settings.json',
   },
   {
     icon: Binary,
     title: 'Any Binary',
-    description: 'Fonts, images, data files. If you fetch it, verify it.',
+    description: 'Fonts, images, datasets, safetensors. If you fetch it, verify it.',
     example: '/assets/data.bin',
   },
 ];
@@ -51,7 +63,7 @@ export function UseCases() {
             Protect the files that power your application.
           </p>
 
-          <div className="grid md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
             {useCases.map((useCase, i) => (
               <motion.div
                 key={useCase.title}

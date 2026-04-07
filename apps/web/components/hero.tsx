@@ -54,7 +54,7 @@ export function Hero() {
         >
           4GB AI model, network drops at 3.8GB? Resume from 3.8GB, not zero.
           <br />
-          <span className="text-zinc-500">2MB memory for any file size. Detect corruption instantly. Multi-CDN failover.</span>
+          <span className="text-zinc-500">Drop-in integrations for Transformers.js and WebLLM. 2MB constant memory. Multi-CDN failover.</span>
         </motion.p>
 
         {/* Install Command */}
