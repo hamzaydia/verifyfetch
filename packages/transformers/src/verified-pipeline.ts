@@ -110,8 +110,8 @@ export async function verifiedPipeline(
 
   // Build pipeline options
   const pipelineOptions: Record<string, unknown> = {};
-  if (options.quantized !== undefined) {
-    pipelineOptions.quantized = options.quantized;
+  if (options.dtype !== undefined) {
+    pipelineOptions.dtype = options.dtype;
   }
   if (options.revision !== undefined) {
     pipelineOptions.revision = options.revision;

@@ -91,3 +91,22 @@ jobs:
           du -sh packages/core/dist/
           echo "CLI package size:"
           du -sh packages/cli/dist/
+
+      - name: Verify no workspace references in packed tarballs
+        run: |
+          for pkg in packages/*/; do
+            if [ -f "$pkg/package.json" ] && node -e "process.exit(require('./$pkg/package.json').private ? 1 : 0)" 2>/dev/null; then
+              echo "Packing $pkg..."
+              cd "$pkg"
+              tarball=$(pnpm pack 2>/dev/null)
+              if tar -xzf "$tarball" --to-stdout package/package.json | grep -q '"workspace:'; then
+                echo "ERROR: $pkg tarball contains unresolved workspace: references!"
+                tar -xzf "$tarball" --to-stdout package/package.json | grep 'workspace:'
+                exit 1
+              fi
+              rm -f "$tarball"
+              cd "$GITHUB_WORKSPACE"
+              echo "  OK: $pkg clean"
+            fi
+          done
+          echo "All packages verified."

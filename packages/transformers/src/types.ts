@@ -183,8 +183,8 @@ export interface VerifiedPipelineOptions extends VerificationConfig {
   /** Timeout per request in milliseconds */
   timeout?: number;
 
-  /** Quantized model variant (e.g., true for quantized, false for full) */
-  quantized?: boolean;
+  /** Model data type (e.g., 'fp32', 'fp16', 'q8', 'q4', 'q4f16') */
+  dtype?: string;
 
   /** Specific revision/commit hash from Hugging Face */
   revision?: string;

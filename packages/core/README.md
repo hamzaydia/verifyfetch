@@ -91,8 +91,8 @@ See [GitHub README](https://github.com/hamzaydia/verifyfetch) for:
 ## Generate Hashes
 
 ```bash
-npx verifyfetch sign ./public/*.wasm
-npx verifyfetch sign --chunked ./large-model.bin  # For resumable downloads
+npx @verifyfetch/cli sign ./public/*.wasm
+npx @verifyfetch/cli sign --chunked ./large-model.bin  # For resumable downloads
 ```
 
 ## License

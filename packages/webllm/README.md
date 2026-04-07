@@ -107,7 +107,7 @@ Create a manifest with hashes for your model files:
 Generate it with the CLI:
 
 ```bash
-npx @verifyfetch/cli sign --chunked ./model-directory/
+npx @verifyfetch/cli hash-model Phi-3-mini-4k-instruct-q4f16_1-MLC
 ```
 
 ## API

@@ -19,6 +19,7 @@
     "index.d.ts"
   ],
   "scripts": {
+    "prepack": "node ../../scripts/prepack-check.js",
     "generate": "echo 'Run: npx verifyfetch hash-model <model-id> to generate manifests'"
   },
   "keywords": [

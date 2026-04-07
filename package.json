@@ -3,6 +3,7 @@
   "private": true,
   "packageManager": "pnpm@9.15.0",
   "scripts": {
+    "preinstall": "npx only-allow pnpm",
     "build": "pnpm -r build",
     "build:wasm": "pnpm --filter @verifyfetch/core build:wasm",
     "dev": "pnpm -r --parallel dev",
@@ -10,7 +11,8 @@
     "lint": "pnpm -r lint",
     "clean": "pnpm -r clean",
     "changeset": "changeset",
-    "release": "pnpm build && changeset publish"
+    "release": "pnpm build && pnpm pack-check && changeset publish",
+    "pack-check": "node scripts/check-packed-workspace-refs.js"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.0",

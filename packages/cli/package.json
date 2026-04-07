@@ -10,6 +10,7 @@
     "dist"
   ],
   "scripts": {
+    "prepack": "node ../../scripts/prepack-check.js",
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "vitest --passWithNoTests"

@@ -24,6 +24,7 @@
     "dist"
   ],
   "scripts": {
+    "prepack": "node ../../scripts/prepack-check.js",
     "build:wasm": "cd wasm && wasm-pack build --target web --out-dir pkg",
     "build:ts": "tsup",
     "build": "pnpm build:wasm && pnpm build:ts",
