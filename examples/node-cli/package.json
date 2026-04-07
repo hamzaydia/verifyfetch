@@ -1,5 +1,6 @@
 {
   "name": "verifyfetch-node-example",
+  "private": true,
   "version": "1.0.1",
   "type": "module",
   "description": "Example: Using VerifyFetch in Node.js",

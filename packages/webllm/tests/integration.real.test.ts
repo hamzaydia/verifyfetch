@@ -24,7 +24,7 @@ const REAL_CONFIG_FILE = 'mlc-chat-config.json';
 const REAL_TOKENIZER_CONFIG = 'tokenizer_config.json';
 
 // Test timeout for network operations
-const NETWORK_TIMEOUT = 30000;
+const NETWORK_TIMEOUT = 60000;
 
 // Verbose logging helper
 function log(section: string, message: string, data?: unknown): void {
