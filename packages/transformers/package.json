@@ -1,6 +1,6 @@
 {
   "name": "@verifyfetch/transformers",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Verified, resumable model loading for Transformers.js. Integrity verification for AI models in the browser.",
   "type": "module",
   "main": "./dist/index.js",

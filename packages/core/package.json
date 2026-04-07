@@ -1,6 +1,6 @@
 {
   "name": "verifyfetch",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Download large files without crashing your browser. Resumable, verified downloads for AI models, WASM, and large files.",
   "type": "module",
   "main": "./dist/index.js",

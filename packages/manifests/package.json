@@ -1,6 +1,6 @@
 {
   "name": "@verifyfetch/manifests",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Pre-computed integrity manifests for popular AI models. Ready-to-use verification hashes for Transformers.js and WebLLM models.",
   "type": "module",
   "main": "./index.js",

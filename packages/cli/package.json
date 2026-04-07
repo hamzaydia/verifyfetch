@@ -1,6 +1,6 @@
 {
   "name": "@verifyfetch/cli",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Generate SRI hashes and chunked verification for resumable downloads. Works with WASM, AI models, and any binary files.",
   "type": "module",
   "bin": {

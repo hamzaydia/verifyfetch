@@ -1,6 +1,6 @@
 {
   "name": "@verifyfetch/webllm",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Verified, resumable model loading for WebLLM. Integrity verification for AI models in the browser.",
   "type": "module",
   "main": "./dist/index.js",
